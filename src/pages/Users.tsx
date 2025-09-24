@@ -702,12 +702,17 @@ const Users = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleEditUser(user, "platform")}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
+                                onClick={() => handleDeleteUser(user.id, "platform")}
                                 className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -776,12 +781,17 @@ const Users = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleEditUser(user, "client")}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
+                                onClick={() => handleDeleteUser(user.id, "client")}
                                 className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
