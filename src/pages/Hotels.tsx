@@ -64,6 +64,7 @@ const Hotels = () => {
   ]);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingHotel, setEditingHotel] = useState<Hotel | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
@@ -105,6 +106,56 @@ const Hotels = () => {
     toast({
       title: "Hotel creado",
       description: "El hotel ha sido creado exitosamente.",
+    });
+  };
+
+  const handleEditHotel = (hotel: Hotel) => {
+    setEditingHotel(hotel);
+    setFormData({
+      nombre: hotel.nombre,
+      codigo_hotel: hotel.codigo_hotel,
+      timezone: hotel.timezone,
+      primario: hotel.branding?.colores?.primario || "#1e40af",
+      secundario: hotel.branding?.colores?.secundario || "#f59e0b",
+      layout: hotel.theme?.layout || "modern"
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateHotel = () => {
+    if (!editingHotel) return;
+
+    const updatedHotel: Hotel = {
+      ...editingHotel,
+      nombre: formData.nombre,
+      codigo_hotel: formData.codigo_hotel,
+      timezone: formData.timezone,
+      branding: {
+        colores: {
+          primario: formData.primario,
+          secundario: formData.secundario
+        }
+      },
+      theme: {
+        layout: formData.layout
+      }
+    };
+
+    setHotels(hotels.map(h => h.id === editingHotel.id ? updatedHotel : h));
+    setIsEditDialogOpen(false);
+    setEditingHotel(null);
+    setFormData({
+      nombre: "",
+      codigo_hotel: "",
+      timezone: "UTC",
+      primario: "#1e40af",
+      secundario: "#f59e0b",
+      layout: "modern"
+    });
+    
+    toast({
+      title: "Hotel actualizado",
+      description: "El hotel ha sido actualizado exitosamente.",
     });
   };
 
@@ -223,6 +274,99 @@ const Hotels = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Editar Hotel</DialogTitle>
+                <DialogDescription>
+                  Modifica los detalles del hotel
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-nombre">Nombre del Hotel</Label>
+                  <Input
+                    id="edit-nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    placeholder="Hotel Plaza Central"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-codigo">Código del Hotel</Label>
+                  <Input
+                    id="edit-codigo"
+                    value={formData.codigo_hotel}
+                    onChange={(e) => setFormData({...formData, codigo_hotel: e.target.value})}
+                    placeholder="HPC001"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-timezone">Zona Horaria</Label>
+                  <Select value={formData.timezone} onValueChange={(value) => setFormData({...formData, timezone: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                      <SelectItem value="America/Mexico_City">Ciudad de México</SelectItem>
+                      <SelectItem value="America/Cancun">Cancún</SelectItem>
+                      <SelectItem value="America/Tijuana">Tijuana</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-primario">Color Primario</Label>
+                    <Input
+                      id="edit-primario"
+                      type="color"
+                      value={formData.primario}
+                      onChange={(e) => setFormData({...formData, primario: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-secundario">Color Secundario</Label>
+                    <Input
+                      id="edit-secundario"
+                      type="color"
+                      value={formData.secundario}
+                      onChange={(e) => setFormData({...formData, secundario: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-layout">Layout</Label>
+                  <Select value={formData.layout} onValueChange={(value) => setFormData({...formData, layout: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="modern">Moderno</SelectItem>
+                      <SelectItem value="classic">Clásico</SelectItem>
+                      <SelectItem value="minimal">Minimalista</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdateHotel} className="bg-gradient-primary">
+                  Actualizar Hotel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <Card className="shadow-card">
@@ -273,7 +417,11 @@ const Hotels = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditHotel(hotel)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 

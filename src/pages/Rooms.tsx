@@ -66,6 +66,8 @@ const Rooms = () => {
   ]);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [formData, setFormData] = useState({
     codigo_habitacion: "",
     hotel_id: "1",
@@ -124,6 +126,45 @@ const Rooms = () => {
     toast({
       title: "Habitación eliminada",
       description: "La habitación ha sido eliminada exitosamente.",
+    });
+  };
+
+  const handleEditRoom = (room: Room) => {
+    setEditingRoom(room);
+    setFormData({
+      codigo_habitacion: room.codigo_habitacion,
+      hotel_id: room.hotel_id,
+      tipo: room.tipo,
+      estado: room.estado
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateRoom = () => {
+    if (!editingRoom) return;
+
+    const updatedRoom: Room = {
+      ...editingRoom,
+      codigo_habitacion: formData.codigo_habitacion,
+      hotel_id: formData.hotel_id,
+      hotel_name: formData.hotel_id === "1" ? "Hotel Plaza Central" : "Resort Marina Bay",
+      tipo: formData.tipo,
+      estado: formData.estado
+    };
+
+    setRooms(rooms.map(r => r.id === editingRoom.id ? updatedRoom : r));
+    setIsEditDialogOpen(false);
+    setEditingRoom(null);
+    setFormData({
+      codigo_habitacion: "",
+      hotel_id: "1",
+      tipo: "standard",
+      estado: "libre"
+    });
+    
+    toast({
+      title: "Habitación actualizada",
+      description: "La habitación ha sido actualizada exitosamente.",
     });
   };
 
@@ -222,6 +263,80 @@ const Rooms = () => {
                 </Button>
                 <Button onClick={handleCreateRoom} className="bg-gradient-primary">
                   Crear Habitación
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Editar Habitación</DialogTitle>
+                <DialogDescription>
+                  Modifica los detalles de la habitación
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-codigo">Código de Habitación</Label>
+                  <Input
+                    id="edit-codigo"
+                    value={formData.codigo_habitacion}
+                    onChange={(e) => setFormData({...formData, codigo_habitacion: e.target.value})}
+                    placeholder="101"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-hotel">Hotel</Label>
+                  <Select value={formData.hotel_id} onValueChange={(value) => setFormData({...formData, hotel_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Hotel Plaza Central</SelectItem>
+                      <SelectItem value="2">Resort Marina Bay</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-tipo">Tipo de Habitación</Label>
+                  <Select value={formData.tipo} onValueChange={(value) => setFormData({...formData, tipo: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">Standard</SelectItem>
+                      <SelectItem value="suite">Suite</SelectItem>
+                      <SelectItem value="premium">Premium</SelectItem>
+                      <SelectItem value="deluxe">Deluxe</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-estado">Estado</Label>
+                  <Select value={formData.estado} onValueChange={(value: Room["estado"]) => setFormData({...formData, estado: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="libre">Libre</SelectItem>
+                      <SelectItem value="ocupada">Ocupada</SelectItem>
+                      <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdateRoom} className="bg-gradient-primary">
+                  Actualizar Habitación
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -345,9 +460,13 @@ const Rooms = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditRoom(room)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                           <Button 
                             variant="outline" 
                             size="sm"

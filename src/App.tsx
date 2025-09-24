@@ -20,6 +20,7 @@ import ApiKeys from "./pages/ApiKeys";
 import Audit from "./pages/Audit";
 import Settings from "./pages/Settings";
 import NativeApps from "./pages/NativeApps";
+import Businesses from "./pages/Businesses";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,11 @@ const App = () => (
             <Route path="/native-apps" element={
               <AuthGuard>
                 <NativeApps />
+              </AuthGuard>
+            } />
+            <Route path="/businesses" element={
+              <AuthGuard>
+                <Businesses />
               </AuthGuard>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

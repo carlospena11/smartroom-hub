@@ -75,6 +75,8 @@ const Campaigns = () => {
   ]);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
     business_id: "1",
@@ -142,6 +144,57 @@ const Campaigns = () => {
     toast({
       title: "Estado actualizado",
       description: "El estado de la campaña ha sido actualizado.",
+    });
+  };
+
+  const handleEditCampaign = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setFormData({
+      nombre: campaign.nombre,
+      business_id: campaign.business_id,
+      fecha_inicio: campaign.fecha_inicio,
+      fecha_fin: campaign.fecha_fin,
+      prioridad: campaign.prioridad,
+      horarios: campaign.reglas.horarios?.[0] || "09:00-22:00",
+      ubicaciones: campaign.reglas.ubicaciones?.join(", ") || "lobby"
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateCampaign = () => {
+    if (!editingCampaign) return;
+
+    const updatedCampaign: Campaign = {
+      ...editingCampaign,
+      nombre: formData.nombre,
+      business_id: formData.business_id,
+      business_name: formData.business_id === "1" ? "Tótem Lobby Principal" : "Pantalla Spa",
+      fecha_inicio: formData.fecha_inicio,
+      fecha_fin: formData.fecha_fin,
+      prioridad: formData.prioridad,
+      status: new Date(formData.fecha_inicio) > new Date() ? "scheduled" : editingCampaign.status,
+      reglas: {
+        horarios: [formData.horarios],
+        ubicaciones: formData.ubicaciones.split(",").map(u => u.trim())
+      }
+    };
+
+    setCampaigns(campaigns.map(c => c.id === editingCampaign.id ? updatedCampaign : c));
+    setIsEditDialogOpen(false);
+    setEditingCampaign(null);
+    setFormData({
+      nombre: "",
+      business_id: "1",
+      fecha_inicio: "",
+      fecha_fin: "",
+      prioridad: 5,
+      horarios: "09:00-22:00",
+      ubicaciones: "lobby"
+    });
+    
+    toast({
+      title: "Campaña actualizada",
+      description: "La campaña ha sido actualizada exitosamente.",
     });
   };
 
@@ -266,6 +319,105 @@ const Campaigns = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Editar Campaña</DialogTitle>
+                <DialogDescription>
+                  Modifica los detalles de la campaña publicitaria
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-nombre">Nombre de la Campaña</Label>
+                  <Input
+                    id="edit-nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    placeholder="Campaña Verano 2024"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-business">Dispositivo</Label>
+                  <Select value={formData.business_id} onValueChange={(value) => setFormData({...formData, business_id: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Tótem Lobby Principal</SelectItem>
+                      <SelectItem value="2">Pantalla Spa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-fecha_inicio">Fecha Inicio</Label>
+                    <Input
+                      id="edit-fecha_inicio"
+                      type="date"
+                      value={formData.fecha_inicio}
+                      onChange={(e) => setFormData({...formData, fecha_inicio: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-fecha_fin">Fecha Fin</Label>
+                    <Input
+                      id="edit-fecha_fin"
+                      type="date"
+                      value={formData.fecha_fin}
+                      onChange={(e) => setFormData({...formData, fecha_fin: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-prioridad">Prioridad (1-10)</Label>
+                  <Input
+                    id="edit-prioridad"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.prioridad}
+                    onChange={(e) => setFormData({...formData, prioridad: parseInt(e.target.value)})}
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-horarios">Horarios de Exhibición</Label>
+                  <Input
+                    id="edit-horarios"
+                    value={formData.horarios}
+                    onChange={(e) => setFormData({...formData, horarios: e.target.value})}
+                    placeholder="09:00-22:00"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-ubicaciones">Ubicaciones (separadas por coma)</Label>
+                  <Input
+                    id="edit-ubicaciones"
+                    value={formData.ubicaciones}
+                    onChange={(e) => setFormData({...formData, ubicaciones: e.target.value})}
+                    placeholder="lobby, recepcion, piscina"
+                  />
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdateCampaign} className="bg-gradient-primary">
+                  Actualizar Campaña
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
@@ -386,7 +538,11 @@ const Campaigns = () => {
                           >
                             {campaign.status === "active" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditCampaign(campaign)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 

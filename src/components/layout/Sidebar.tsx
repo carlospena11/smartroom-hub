@@ -49,6 +49,7 @@ const navItems: NavItem[] = [
         title: "Negocios",
         icon: Store,
         children: [
+          { title: "Gestión", icon: Store, href: "/businesses" },
           { title: "Tótems", icon: Monitor, href: "/totems" },
           { title: "Publicidad", icon: Radio, href: "/advertising" },
           { title: "Eventos", icon: CalendarDays, href: "/events" },

@@ -68,6 +68,8 @@ const Users = () => {
   ]);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
     email: "",
@@ -135,6 +137,44 @@ const Users = () => {
     toast({
       title: "Estado actualizado",
       description: "El estado del usuario ha sido actualizado.",
+    });
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setFormData({
+      nombre: user.nombre,
+      email: user.email,
+      tenant_role: user.tenant_role,
+      mfa_enabled: user.mfa_enabled
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!editingUser) return;
+
+    const updatedUser: User = {
+      ...editingUser,
+      nombre: formData.nombre,
+      email: formData.email,
+      tenant_role: formData.tenant_role,
+      mfa_enabled: formData.mfa_enabled
+    };
+
+    setUsers(users.map(u => u.id === editingUser.id ? updatedUser : u));
+    setIsEditDialogOpen(false);
+    setEditingUser(null);
+    setFormData({
+      nombre: "",
+      email: "",
+      tenant_role: "viewer",
+      mfa_enabled: false
+    });
+    
+    toast({
+      title: "Usuario actualizado",
+      description: "El usuario ha sido actualizado exitosamente.",
     });
   };
 
@@ -224,6 +264,74 @@ const Users = () => {
                 </Button>
                 <Button onClick={handleCreateUser} className="bg-gradient-primary">
                   Crear Usuario
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Editar Usuario</DialogTitle>
+                <DialogDescription>
+                  Modifica los detalles del usuario y sus permisos
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-nombre">Nombre Completo</Label>
+                  <Input
+                    id="edit-nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    placeholder="Juan Pérez"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="juan.perez@ejemplo.com"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-role">Rol del Usuario</Label>
+                  <Select value={formData.tenant_role} onValueChange={(value: User["tenant_role"]) => setFormData({...formData, tenant_role: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tenant_admin">Administrador Tenant</SelectItem>
+                      <SelectItem value="hotel_admin">Administrador Hotel</SelectItem>
+                      <SelectItem value="editor">Editor de Contenido</SelectItem>
+                      <SelectItem value="viewer">Visualizador</SelectItem>
+                      <SelectItem value="ops">Operaciones</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="edit-mfa"
+                    checked={formData.mfa_enabled}
+                    onCheckedChange={(checked) => setFormData({...formData, mfa_enabled: checked})}
+                  />
+                  <Label htmlFor="edit-mfa">Habilitar Autenticación de Dos Factores</Label>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdateUser} className="bg-gradient-primary">
+                  Actualizar Usuario
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -347,7 +455,11 @@ const Users = () => {
                           >
                             {user.status === "active" ? "Desactivar" : "Activar"}
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditUser(user)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 
