@@ -112,6 +112,8 @@ const Totems = () => {
   ]);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingTotem, setEditingTotem] = useState<Totem | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
     ubicacion: "",
@@ -202,6 +204,64 @@ const Totems = () => {
     toast({
       title: "Estado actualizado",
       description: "El estado del tótem ha sido actualizado.",
+    });
+  };
+
+  const handleEditTotem = (totem: Totem) => {
+    setEditingTotem(totem);
+    setFormData({
+      nombre: totem.nombre,
+      ubicacion: totem.ubicacion,
+      codigo: totem.codigo,
+      url_gestion: totem.url_gestion,
+      titulo_web: totem.configuracion_web.titulo,
+      descripcion_web: totem.configuracion_web.descripcion,
+      tema_web: totem.configuracion_web.tema,
+      template: totem.layout.template,
+      timezone: totem.timezone
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateTotem = () => {
+    if (!editingTotem) return;
+
+    const updatedTotem: Totem = {
+      ...editingTotem,
+      nombre: formData.nombre,
+      ubicacion: formData.ubicacion,
+      codigo: formData.codigo,
+      url_gestion: formData.url_gestion,
+      configuracion_web: {
+        titulo: formData.titulo_web,
+        descripcion: formData.descripcion_web,
+        tema: formData.tema_web
+      },
+      layout: {
+        template: formData.template,
+        configuracion: { theme: "modern", language: "es" }
+      },
+      timezone: formData.timezone
+    };
+
+    setTotems(totems.map(t => t.id === editingTotem.id ? updatedTotem : t));
+    setIsEditDialogOpen(false);
+    setEditingTotem(null);
+    setFormData({
+      nombre: "",
+      ubicacion: "",
+      codigo: "",
+      url_gestion: "",
+      titulo_web: "",
+      descripcion_web: "",
+      tema_web: "modern_blue",
+      template: "welcome_screen",
+      timezone: "America/Mexico_City"
+    });
+    
+    toast({
+      title: "Tótem actualizado",
+      description: "El tótem ha sido actualizado exitosamente.",
     });
   };
 
@@ -456,13 +516,20 @@ const Totems = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleToggleStatus(totem.id)}
-                          >
-                            {totem.status === "online" ? "Desconectar" : "Conectar"}
-                          </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditTotem(totem)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleStatus(totem.id)}
+                        >
+                          {totem.status === "online" ? "Desconectar" : "Conectar"}
+                        </Button>
                           <Button variant="outline" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>

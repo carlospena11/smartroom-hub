@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Hotels from "./pages/Hotels";
 import Rooms from "./pages/Rooms";
+import CRM from "./pages/CRM";
 import Totems from "./pages/Totems";
 import Advertising from "./pages/Advertising";
 import Events from "./pages/Events";
@@ -46,6 +47,11 @@ const App = () => (
             <Route path="/rooms" element={
               <AuthGuard>
                 <Rooms />
+              </AuthGuard>
+            } />
+            <Route path="/crm" element={
+              <AuthGuard>
+                <CRM />
               </AuthGuard>
             } />
             <Route path="/totems" element={

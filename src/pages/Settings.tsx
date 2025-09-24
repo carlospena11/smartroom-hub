@@ -16,6 +16,7 @@ const Settings = () => {
   
   const [generalSettings, setGeneralSettings] = useState({
     tenant_name: "SmartRoom Hotels",
+    logo_url: "/logo.png",
     default_timezone: "America/Mexico_City",
     default_language: "es",
     currency: "MXN",
@@ -105,14 +106,15 @@ const Settings = () => {
               
               <CardContent className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="tenant_name">Nombre del Tenant</Label>
-                    <Input
-                      id="tenant_name"
-                      value={generalSettings.tenant_name}
-                      onChange={(e) => setGeneralSettings({...generalSettings, tenant_name: e.target.value})}
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="logo_url">URL del Logo</Label>
+                  <Input
+                    id="logo_url"
+                    value={generalSettings.logo_url}
+                    onChange={(e) => setGeneralSettings({...generalSettings, logo_url: e.target.value})}
+                    placeholder="/logo.png"
+                  />
+                </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="default_timezone">Zona Horaria por Defecto</Label>

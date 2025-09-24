@@ -83,39 +83,22 @@ export const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <StatsCard
-          title="Hoteles Activos"
-          value={dashboardData.stats.hotels.total}
-          icon={Building2}
-          description="Total de hoteles registrados"
-          trend={dashboardData.stats.hotels.trend}
-          variant="primary"
-        />
-        
-        <StatsCard
-          title="Habitaciones"
+          title="Total Habitaciones"
           value={dashboardData.stats.rooms.total}
           icon={Bed}
           description="Habitaciones configuradas"
           trend={dashboardData.stats.rooms.trend}
-          variant="secondary"
+          variant="primary"
         />
         
         <StatsCard
-          title="Dispositivos"
-          value={`${dashboardData.stats.devices.active}/${dashboardData.stats.devices.total}`}
+          title="Plataformas Digitales"
+          value="Android TV: 45, webOS: 22, Roku: 12"
           icon={Monitor}
-          description={`${dashboardData.stats.devices.inactive} sin conexión`}
-          variant="tertiary"
-        />
-        
-        <StatsCard
-          title="Usuarios"
-          value={dashboardData.stats.users.total}
-          icon={Users}
-          description="Usuarios del sistema"
-          trend={dashboardData.stats.users.trend}
+          description="Por tipo de plataforma"
+          variant="secondary"
         />
       </div>
 
