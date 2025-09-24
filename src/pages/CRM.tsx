@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, DollarSign, FileText, Hotel, Calendar, CreditCard } from "lucide-react";
+import { Plus, Edit, Trash2, DollarSign, FileText, Hotel, Calendar, CreditCard, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from 'jspdf';
 
 interface Service {
   id: string;
@@ -87,6 +88,130 @@ const CRM = () => {
     toast({
       title: "Factura eliminada",
       description: "La factura ha sido eliminada exitosamente.",
+    });
+  };
+
+  // Función para generar PDF de la factura
+  const generateInvoicePDF = (invoice: Invoice) => {
+    const pdf = new jsPDF();
+    
+    // Configurar el documento
+    pdf.setFontSize(20);
+    pdf.text('FACTURA', 20, 20);
+    
+    // Información de la empresa
+    pdf.setFontSize(12);
+    pdf.text('SmartRoom Solutions', 20, 40);
+    pdf.text('Sistemas de Gestión Hotelera', 20, 50);
+    pdf.text('contacto@smartroom.com', 20, 60);
+    pdf.text('Tel: +1-800-SMART-01', 20, 70);
+    
+    // Información de la factura
+    pdf.setFontSize(14);
+    pdf.text(`Factura: ${invoice.numero_factura}`, 120, 40);
+    pdf.setFontSize(12);
+    pdf.text(`Fecha de Emisión: ${invoice.fecha_emision}`, 120, 50);
+    pdf.text(`Fecha de Vencimiento: ${invoice.fecha_vencimiento}`, 120, 60);
+    pdf.text(`Estado: ${invoice.status === 'pagada' ? 'PAGADA' : invoice.status === 'pendiente' ? 'PENDIENTE' : 'VENCIDA'}`, 120, 70);
+    
+    // Información del cliente
+    pdf.setFontSize(14);
+    pdf.text('FACTURAR A:', 20, 90);
+    pdf.setFontSize(12);
+    pdf.text(`${invoice.hotel_name}`, 20, 100);
+    
+    // Buscar información adicional del hotel
+    const hotelService = services.find(s => s.hotel_id === invoice.hotel_id);
+    if (hotelService) {
+      pdf.text(`${hotelService.facturacion_nombre}`, 20, 110);
+      pdf.text(`Tel: ${hotelService.hotel_telefono}`, 20, 120);
+      pdf.text(`Responsable: ${hotelService.responsable_administrativo}`, 20, 130);
+    }
+    
+    // Tabla de servicios
+    pdf.setFontSize(14);
+    pdf.text('SERVICIOS:', 20, 150);
+    
+    let yPosition = 160;
+    pdf.setFontSize(10);
+    pdf.text('Descripción', 20, yPosition);
+    pdf.text('Cantidad', 120, yPosition);
+    pdf.text('Precio Unit.', 150, yPosition);
+    pdf.text('Total', 175, yPosition);
+    
+    // Línea separadora
+    pdf.line(20, yPosition + 5, 190, yPosition + 5);
+    yPosition += 15;
+    
+    // Servicios facturados
+    let subtotal = 0;
+    invoice.servicios.forEach((servicioNombre) => {
+      const servicio = services.find(s => s.nombre === servicioNombre && s.hotel_id === invoice.hotel_id);
+      if (servicio) {
+        const totalUnidades = servicio.cantidad_habitaciones + servicio.cantidad_tv + servicio.cantidad_plataformas_digitales;
+        
+        pdf.text(servicio.nombre, 20, yPosition);
+        pdf.text(`${totalUnidades}`, 120, yPosition);
+        pdf.text(`$${servicio.precio_unitario}`, 150, yPosition);
+        pdf.text(`$${servicio.precio_total.toLocaleString()}`, 175, yPosition);
+        
+        yPosition += 10;
+        
+        // Detalle de unidades
+        pdf.setFontSize(8);
+        pdf.text(`• ${servicio.cantidad_habitaciones} habitaciones`, 25, yPosition);
+        pdf.text(`• ${servicio.cantidad_tv} TV`, 25, yPosition + 8);
+        pdf.text(`• ${servicio.cantidad_plataformas_digitales} plataformas digitales`, 25, yPosition + 16);
+        
+        yPosition += 25;
+        pdf.setFontSize(10);
+        subtotal += servicio.precio_total;
+      }
+    });
+    
+    // Totales
+    pdf.line(120, yPosition, 190, yPosition);
+    yPosition += 10;
+    
+    pdf.setFontSize(12);
+    pdf.text('SUBTOTAL:', 150, yPosition);
+    pdf.text(`$${subtotal.toLocaleString()}`, 175, yPosition);
+    yPosition += 10;
+    
+    pdf.text('IVA (0%):', 150, yPosition);
+    pdf.text('$0', 175, yPosition);
+    yPosition += 10;
+    
+    pdf.setFontSize(14);
+    pdf.text('TOTAL:', 150, yPosition);
+    pdf.text(`$${invoice.monto_total.toLocaleString()}`, 175, yPosition);
+    
+    // Información de pago si está pagada
+    if (invoice.status === 'pagada' && invoice.fecha_pago) {
+      yPosition += 20;
+      pdf.setFontSize(12);
+      pdf.text('INFORMACIÓN DE PAGO:', 20, yPosition);
+      yPosition += 10;
+      pdf.text(`Fecha de Pago: ${invoice.fecha_pago}`, 20, yPosition);
+      if (invoice.metodo_pago) {
+        yPosition += 10;
+        pdf.text(`Método de Pago: ${invoice.metodo_pago}`, 20, yPosition);
+      }
+    }
+    
+    // Pie de página
+    pdf.setFontSize(8);
+    pdf.text('Esta es una factura generada electrónicamente.', 20, 280);
+    pdf.text('Para consultas, contacte a facturacion@smartroom.com', 20, 285);
+    
+    // Abrir el PDF en una nueva ventana
+    const pdfBlob = pdf.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl, '_blank');
+    
+    toast({
+      title: "PDF generado",
+      description: "La factura se ha abierto en una nueva ventana.",
     });
   };
 
@@ -1106,30 +1231,38 @@ const CRM = () => {
                         </div>
                       )}
                       
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                          setSelectedInvoice(null);
-                          setIsEditingInvoice(false);
-                        }}>
-                          Cerrar
-                        </Button>
-                        {!isEditingInvoice && (
-                          <Button onClick={() => setIsEditingInvoice(true)}>
-                            Editar
-                          </Button>
-                        )}
-                        {isEditingInvoice && (
-                          <Button onClick={() => {
-                            toast({
-                              title: "Factura actualizada",
-                              description: "Los cambios han sido guardados exitosamente.",
-                            });
-                            setIsEditingInvoice(false);
-                          }}>
-                            Guardar Cambios
-                          </Button>
-                        )}
-                      </DialogFooter>
+                       <DialogFooter>
+                         <Button variant="outline" onClick={() => {
+                           setSelectedInvoice(null);
+                           setIsEditingInvoice(false);
+                         }}>
+                           Cerrar
+                         </Button>
+                         <Button 
+                           variant="outline" 
+                           onClick={() => generateInvoicePDF(selectedInvoice)}
+                           className="bg-gradient-secondary"
+                         >
+                           <Download className="h-4 w-4 mr-2" />
+                           Generar PDF
+                         </Button>
+                         {!isEditingInvoice && (
+                           <Button onClick={() => setIsEditingInvoice(true)}>
+                             Editar
+                           </Button>
+                         )}
+                         {isEditingInvoice && (
+                           <Button onClick={() => {
+                             toast({
+                               title: "Factura actualizada",
+                               description: "Los cambios han sido guardados exitosamente.",
+                             });
+                             setIsEditingInvoice(false);
+                           }}>
+                             Guardar Cambios
+                           </Button>
+                         )}
+                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -1170,22 +1303,33 @@ const CRM = () => {
                               {statusConfig.label}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleViewInvoice(invoice)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleDeleteInvoice(invoice.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
+                           <TableCell className="text-right space-x-2">
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => handleViewInvoice(invoice)}
+                               title="Ver factura"
+                             >
+                               <Edit className="h-4 w-4" />
+                             </Button>
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => generateInvoicePDF(invoice)}
+                               title="Generar PDF"
+                               className="bg-gradient-secondary"
+                             >
+                               <Download className="h-4 w-4" />
+                             </Button>
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => handleDeleteInvoice(invoice.id)}
+                               title="Eliminar factura"
+                             >
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
+                           </TableCell>
                         </TableRow>
                       );
                     })}
