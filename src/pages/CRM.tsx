@@ -10,9 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, DollarSign, FileText, Hotel, Calendar, CreditCard, Download } from "lucide-react";
+import { Plus, Edit, Trash2, DollarSign, FileText, Hotel, Calendar, CreditCard, Download, Eye, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from 'jspdf';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import html2canvas from 'html2canvas';
 
 interface Service {
   id: string;
@@ -47,6 +50,8 @@ interface Invoice {
   status: "pendiente" | "pagada" | "vencida";
   metodo_pago?: string;
   fecha_pago?: string;
+  custom_header?: string;
+  logo_url?: string;
 }
 
 interface Payment {
@@ -67,6 +72,9 @@ const CRM = () => {
   // Estados para manejar dialogs
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isEditingInvoice, setIsEditingInvoice] = useState(false);
+  const [isCustomizingInvoice, setIsCustomizingInvoice] = useState(false);
+  const [invoiceCustomHeader, setInvoiceCustomHeader] = useState('');
+  const [invoicePreviewHtml, setInvoicePreviewHtml] = useState('');
   
   // Función para manejar ver factura
   const handleViewInvoice = (invoice: Invoice) => {
@@ -91,128 +99,190 @@ const CRM = () => {
     });
   };
 
-  // Función para generar PDF de la factura
-  const generateInvoicePDF = (invoice: Invoice) => {
-    const pdf = new jsPDF();
-    
-    // Configurar el documento
-    pdf.setFontSize(20);
-    pdf.text('FACTURA', 20, 20);
-    
-    // Información de la empresa
-    pdf.setFontSize(12);
-    pdf.text('SmartRoom Solutions', 20, 40);
-    pdf.text('Sistemas de Gestión Hotelera', 20, 50);
-    pdf.text('contacto@smartroom.com', 20, 60);
-    pdf.text('Tel: +1-800-SMART-01', 20, 70);
-    
-    // Información de la factura
-    pdf.setFontSize(14);
-    pdf.text(`Factura: ${invoice.numero_factura}`, 120, 40);
-    pdf.setFontSize(12);
-    pdf.text(`Fecha de Emisión: ${invoice.fecha_emision}`, 120, 50);
-    pdf.text(`Fecha de Vencimiento: ${invoice.fecha_vencimiento}`, 120, 60);
-    pdf.text(`Estado: ${invoice.status === 'pagada' ? 'PAGADA' : invoice.status === 'pendiente' ? 'PENDIENTE' : 'VENCIDA'}`, 120, 70);
-    
-    // Información del cliente
-    pdf.setFontSize(14);
-    pdf.text('FACTURAR A:', 20, 90);
-    pdf.setFontSize(12);
-    pdf.text(`${invoice.hotel_name}`, 20, 100);
-    
-    // Buscar información adicional del hotel
+  // Función para personalizar factura
+  const handleCustomizeInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setInvoiceCustomHeader(invoice.custom_header || '');
+    setIsCustomizingInvoice(true);
+    generateInvoicePreview(invoice);
+  };
+
+  // Función para generar vista previa HTML de la factura
+  const generateInvoicePreview = (invoice: Invoice) => {
     const hotelService = services.find(s => s.hotel_id === invoice.hotel_id);
-    if (hotelService) {
-      pdf.text(`${hotelService.facturacion_nombre}`, 20, 110);
-      pdf.text(`Tel: ${hotelService.hotel_telefono}`, 20, 120);
-      pdf.text(`Responsable: ${hotelService.responsable_administrativo}`, 20, 130);
-    }
     
-    // Tabla de servicios
-    pdf.setFontSize(14);
-    pdf.text('SERVICIOS:', 20, 150);
-    
-    let yPosition = 160;
-    pdf.setFontSize(10);
-    pdf.text('Descripción', 20, yPosition);
-    pdf.text('Cantidad', 120, yPosition);
-    pdf.text('Precio Unit.', 150, yPosition);
-    pdf.text('Total', 175, yPosition);
-    
-    // Línea separadora
-    pdf.line(20, yPosition + 5, 190, yPosition + 5);
-    yPosition += 15;
-    
-    // Servicios facturados
+    let serviciosHTML = '';
     let subtotal = 0;
+    
     invoice.servicios.forEach((servicioNombre) => {
       const servicio = services.find(s => s.nombre === servicioNombre && s.hotel_id === invoice.hotel_id);
       if (servicio) {
         const totalUnidades = servicio.cantidad_habitaciones + servicio.cantidad_tv + servicio.cantidad_plataformas_digitales;
-        
-        pdf.text(servicio.nombre, 20, yPosition);
-        pdf.text(`${totalUnidades}`, 120, yPosition);
-        pdf.text(`$${servicio.precio_unitario}`, 150, yPosition);
-        pdf.text(`$${servicio.precio_total.toLocaleString()}`, 175, yPosition);
-        
-        yPosition += 10;
-        
-        // Detalle de unidades
-        pdf.setFontSize(8);
-        pdf.text(`• ${servicio.cantidad_habitaciones} habitaciones`, 25, yPosition);
-        pdf.text(`• ${servicio.cantidad_tv} TV`, 25, yPosition + 8);
-        pdf.text(`• ${servicio.cantidad_plataformas_digitales} plataformas digitales`, 25, yPosition + 16);
-        
-        yPosition += 25;
-        pdf.setFontSize(10);
         subtotal += servicio.precio_total;
+        
+        serviciosHTML += `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">
+              <div style="font-weight: bold;">${servicio.nombre}</div>
+              <div style="font-size: 12px; color: #666;">
+                • ${servicio.cantidad_habitaciones} habitaciones<br>
+                • ${servicio.cantidad_tv} TV<br>
+                • ${servicio.cantidad_plataformas_digitales} plataformas digitales
+              </div>
+            </td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${totalUnidades}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${servicio.precio_unitario}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">$${servicio.precio_total.toLocaleString()}</td>
+          </tr>
+        `;
       }
     });
+
+    const html = `
+      <div style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; background: white;">
+        ${invoice.custom_header || `
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #333; margin: 0;">SmartRoom Solutions</h1>
+            <p style="color: #666; margin: 5px 0;">Sistemas de Gestión Hotelera</p>
+            <p style="color: #666; margin: 5px 0;">contacto@smartroom.com | Tel: +1-800-SMART-01</p>
+          </div>
+        `}
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+          <div>
+            <h2 style="color: #333; margin: 0 0 10px 0;">FACTURA</h2>
+            <p style="margin: 5px 0;"><strong>Número:</strong> ${invoice.numero_factura}</p>
+            <p style="margin: 5px 0;"><strong>Fecha de Emisión:</strong> ${invoice.fecha_emision}</p>
+            <p style="margin: 5px 0;"><strong>Fecha de Vencimiento:</strong> ${invoice.fecha_vencimiento}</p>
+            <p style="margin: 5px 0;"><strong>Estado:</strong> <span style="color: ${invoice.status === 'pagada' ? '#22c55e' : invoice.status === 'pendiente' ? '#f59e0b' : '#ef4444'}">${invoice.status === 'pagada' ? 'PAGADA' : invoice.status === 'pendiente' ? 'PENDIENTE' : 'VENCIDA'}</span></p>
+          </div>
+          
+          <div>
+            <h3 style="color: #333; margin: 0 0 10px 0;">FACTURAR A:</h3>
+            <p style="margin: 5px 0; font-weight: bold;">${invoice.hotel_name}</p>
+            ${hotelService ? `
+              <p style="margin: 5px 0;">${hotelService.facturacion_nombre}</p>
+              <p style="margin: 5px 0;">Tel: ${hotelService.hotel_telefono}</p>
+              <p style="margin: 5px 0;">Responsable: ${hotelService.responsable_administrativo}</p>
+            ` : ''}
+          </div>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+          <thead>
+            <tr style="background-color: #f8f9fa;">
+              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Descripción</th>
+              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #dee2e6;">Cantidad</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">Precio Unit.</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${serviciosHTML}
+          </tbody>
+        </table>
+        
+        <div style="text-align: right; margin-bottom: 30px;">
+          <div style="display: inline-block; text-align: left;">
+            <p style="margin: 5px 0;"><strong>SUBTOTAL: $${subtotal.toLocaleString()}</strong></p>
+            <p style="margin: 5px 0;">IVA (0%): $0</p>
+            <hr style="margin: 10px 0;">
+            <p style="margin: 5px 0; font-size: 18px;"><strong>TOTAL: $${invoice.monto_total.toLocaleString()}</strong></p>
+          </div>
+        </div>
+        
+        ${invoice.status === 'pagada' && invoice.fecha_pago ? `
+          <div style="background-color: #f0f9ff; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <h4 style="color: #0369a1; margin: 0 0 10px 0;">INFORMACIÓN DE PAGO</h4>
+            <p style="margin: 5px 0;">Fecha de Pago: ${invoice.fecha_pago}</p>
+            ${invoice.metodo_pago ? `<p style="margin: 5px 0;">Método de Pago: ${invoice.metodo_pago}</p>` : ''}
+          </div>
+        ` : ''}
+        
+        <div style="text-align: center; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px;">
+          <p>Esta es una factura generada electrónicamente.</p>
+          <p>Para consultas, contacte a facturacion@smartroom.com</p>
+        </div>
+      </div>
+    `;
     
-    // Totales
-    pdf.line(120, yPosition, 190, yPosition);
-    yPosition += 10;
-    
-    pdf.setFontSize(12);
-    pdf.text('SUBTOTAL:', 150, yPosition);
-    pdf.text(`$${subtotal.toLocaleString()}`, 175, yPosition);
-    yPosition += 10;
-    
-    pdf.text('IVA (0%):', 150, yPosition);
-    pdf.text('$0', 175, yPosition);
-    yPosition += 10;
-    
-    pdf.setFontSize(14);
-    pdf.text('TOTAL:', 150, yPosition);
-    pdf.text(`$${invoice.monto_total.toLocaleString()}`, 175, yPosition);
-    
-    // Información de pago si está pagada
-    if (invoice.status === 'pagada' && invoice.fecha_pago) {
-      yPosition += 20;
-      pdf.setFontSize(12);
-      pdf.text('INFORMACIÓN DE PAGO:', 20, yPosition);
-      yPosition += 10;
-      pdf.text(`Fecha de Pago: ${invoice.fecha_pago}`, 20, yPosition);
-      if (invoice.metodo_pago) {
-        yPosition += 10;
-        pdf.text(`Método de Pago: ${invoice.metodo_pago}`, 20, yPosition);
+    setInvoicePreviewHtml(html);
+  };
+
+  // Función para generar PDF desde HTML
+  const generatePDFFromHTML = async (invoice: Invoice) => {
+    const element = document.getElementById('invoice-preview');
+    if (!element) return;
+
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
       }
+
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      window.open(pdfUrl, '_blank');
+      
+      toast({
+        title: "PDF generado",
+        description: "La factura personalizada se ha abierto en una nueva ventana.",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el PDF. Intente nuevamente.",
+        variant: "destructive"
+      });
     }
+  };
+
+  // Función para guardar personalización de factura
+  const saveInvoiceCustomization = () => {
+    if (!selectedInvoice) return;
     
-    // Pie de página
-    pdf.setFontSize(8);
-    pdf.text('Esta es una factura generada electrónicamente.', 20, 280);
-    pdf.text('Para consultas, contacte a facturacion@smartroom.com', 20, 285);
+    const updatedInvoice = {
+      ...selectedInvoice,
+      custom_header: invoiceCustomHeader
+    };
     
-    // Abrir el PDF en una nueva ventana
-    const pdfBlob = pdf.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    window.open(pdfUrl, '_blank');
+    setInvoices(invoices.map(inv => 
+      inv.id === selectedInvoice.id ? updatedInvoice : inv
+    ));
+    
+    generateInvoicePreview(updatedInvoice);
     
     toast({
-      title: "PDF generado",
-      description: "La factura se ha abierto en una nueva ventana.",
+      title: "Personalización guardada",
+      description: "Los cambios se han aplicado a la factura.",
     });
+  };
+
+  // Función para generar PDF de la factura (versión simple)
+  const generateInvoicePDF = (invoice: Invoice) => {
+    generateInvoicePreview(invoice);
+    setTimeout(() => generatePDFFromHTML(invoice), 500);
   };
 
   const [services, setServices] = useState<Service[]>([
@@ -1144,7 +1214,7 @@ const CRM = () => {
                   </Dialog>
                   
                   {/* Dialog para ver/editar factura */}
-                  <Dialog open={selectedInvoice !== null} onOpenChange={(open) => {
+                  <Dialog open={selectedInvoice !== null && !isCustomizingInvoice} onOpenChange={(open) => {
                     if (!open) {
                       setSelectedInvoice(null);
                       setIsEditingInvoice(false);
@@ -1240,6 +1310,14 @@ const CRM = () => {
                          </Button>
                          <Button 
                            variant="outline" 
+                           onClick={() => handleCustomizeInvoice(selectedInvoice)}
+                           className="bg-gradient-tertiary"
+                         >
+                           <Settings className="h-4 w-4 mr-2" />
+                           Personalizar
+                         </Button>
+                         <Button 
+                           variant="outline" 
                            onClick={() => generateInvoicePDF(selectedInvoice)}
                            className="bg-gradient-secondary"
                          >
@@ -1263,6 +1341,100 @@ const CRM = () => {
                            </Button>
                          )}
                        </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Dialog para personalizar factura */}
+                  <Dialog open={isCustomizingInvoice} onOpenChange={(open) => {
+                    if (!open) {
+                      setIsCustomizingInvoice(false);
+                      setSelectedInvoice(null);
+                      setInvoiceCustomHeader('');
+                      setInvoicePreviewHtml('');
+                    }
+                  }}>
+                    <DialogContent className="sm:max-w-[90vw] max-h-[90vh]">
+                      <DialogHeader>
+                        <DialogTitle>Personalizar Factura</DialogTitle>
+                        <DialogDescription>
+                          Edita el encabezado personalizado y previsualiza tu factura
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="grid grid-cols-2 gap-6 h-[70vh]">
+                        {/* Editor */}
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Encabezado Personalizado (HTML)</Label>
+                            <div className="h-64">
+                              <ReactQuill
+                                theme="snow"
+                                value={invoiceCustomHeader}
+                                onChange={setInvoiceCustomHeader}
+                                modules={{
+                                  toolbar: [
+                                    [{ 'header': [1, 2, 3, false] }],
+                                    ['bold', 'italic', 'underline'],
+                                    ['image', 'link'],
+                                    [{ 'align': [] }],
+                                    [{ 'color': [] }, { 'background': [] }],
+                                    ['clean']
+                                  ]
+                                }}
+                                placeholder="Agregar logo, información de la empresa, etc..."
+                                style={{ height: '200px' }}
+                              />
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            onClick={saveInvoiceCustomization}
+                            className="w-full bg-gradient-primary"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Actualizar Vista Previa
+                          </Button>
+                        </div>
+                        
+                        {/* Vista previa */}
+                        <div className="border rounded-lg overflow-auto bg-white">
+                          <div className="p-4">
+                            <Label className="text-sm font-medium">Vista Previa de la Factura</Label>
+                          </div>
+                          <div 
+                            id="invoice-preview"
+                            dangerouslySetInnerHTML={{ __html: invoicePreviewHtml }}
+                            className="p-4"
+                          />
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                          setIsCustomizingInvoice(false);
+                          setSelectedInvoice(null);
+                          setInvoiceCustomHeader('');
+                          setInvoicePreviewHtml('');
+                        }}>
+                          Cancelar
+                        </Button>
+                        <Button 
+                          onClick={() => selectedInvoice && generatePDFFromHTML(selectedInvoice)}
+                          className="bg-gradient-secondary"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Generar PDF
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            saveInvoiceCustomization();
+                            setIsCustomizingInvoice(false);
+                          }}
+                          className="bg-gradient-primary"
+                        >
+                          Guardar y Cerrar
+                        </Button>
+                      </DialogFooter>
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -1311,6 +1483,15 @@ const CRM = () => {
                                title="Ver factura"
                              >
                                <Edit className="h-4 w-4" />
+                             </Button>
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => handleCustomizeInvoice(invoice)}
+                               title="Personalizar factura"
+                               className="bg-gradient-tertiary"
+                             >
+                               <Settings className="h-4 w-4" />
                              </Button>
                              <Button 
                                variant="outline" 
