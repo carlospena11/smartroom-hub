@@ -11,8 +11,12 @@ import {
   Clock,
   AlertCircle,
   TrendingUp,
-  FileText
+  FileText,
+  Calendar as CalendarIcon,
+  Monitor
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { format, isSameDay, parseISO } from "date-fns";
 
 // Mock CRM data
 const crmData = {
@@ -23,6 +27,14 @@ const crmData = {
     monthlyRevenue: { total: 186750, trend: { value: 23.4, isPositive: true } },
     invoices: { pending: 8, overdue: 2, paid: 65 }
   },
+  platformExpirations: [
+    { platform: "Netflix", hotel: "Hotel Plaza Premium", expirationDate: "2024-02-15", status: "active" },
+    { platform: "Amazon Prime", hotel: "Resort Costa Azul", expirationDate: "2024-02-20", status: "warning" },
+    { platform: "HBO Max", hotel: "Hotel Boutique Garden", expirationDate: "2024-02-28", status: "active" },
+    { platform: "Disney+", hotel: "Centro Comercial Norte", expirationDate: "2024-03-05", status: "critical" },
+    { platform: "YouTube Premium", hotel: "Complejo Turístico Sol", expirationDate: "2024-03-12", status: "active" },
+    { platform: "Spotify", hotel: "Hotel Plaza Premium", expirationDate: "2024-03-18", status: "warning" },
+  ],
   recentInvoices: [
     { id: "INV-2024-067", client: "Hotel Plaza Premium", amount: 12500, status: "paid", dueDate: "2024-01-15" },
     { id: "INV-2024-068", client: "Resort Costa Azul", amount: 18900, status: "pending", dueDate: "2024-01-25" },
@@ -57,6 +69,29 @@ export const Dashboard = () => {
       default:
         return <Badge variant="outline">Desconocido</Badge>;
     }
+  };
+
+  const getPlatformStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-tertiary/20 text-tertiary";
+      case "warning":
+        return "bg-warning/20 text-warning-foreground";
+      case "critical":
+        return "bg-destructive/20 text-destructive";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const getExpirationsForDate = (date: Date) => {
+    return crmData.platformExpirations.filter(exp => 
+      isSameDay(parseISO(exp.expirationDate), date)
+    );
+  };
+
+  const hasExpirations = (date: Date) => {
+    return getExpirationsForDate(date).length > 0;
   };
 
   return (
@@ -136,7 +171,7 @@ export const Dashboard = () => {
       </div>
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Invoices */}
         <Card className="shadow-card">
           <CardHeader>
@@ -161,6 +196,51 @@ export const Dashboard = () => {
             <Button variant="outline" className="w-full mt-4">
               Ver Todas las Facturas
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Platform Expirations Calendar */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Monitor className="h-5 w-5" />
+              Vencimiento de Plataformas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="single"
+              className="rounded-md border p-3 pointer-events-auto"
+              modifiers={{
+                hasExpiration: (date) => hasExpirations(date)
+              }}
+              modifiersStyles={{
+                hasExpiration: {
+                  backgroundColor: 'hsl(var(--primary) / 0.1)',
+                  color: 'hsl(var(--primary))',
+                  fontWeight: 'bold'
+                }
+              }}
+            />
+            
+            {/* Platform expiration list */}
+            <div className="mt-4 space-y-2">
+              <h4 className="text-sm font-medium">Próximos Vencimientos:</h4>
+              {crmData.platformExpirations.slice(0, 3).map((exp, index) => (
+                <div key={index} className="flex justify-between items-center text-xs p-2 rounded border">
+                  <div>
+                    <span className="font-medium">{exp.platform}</span>
+                    <div className="text-muted-foreground">{exp.hotel}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-muted-foreground">{format(parseISO(exp.expirationDate), 'dd/MM')}</div>
+                    <Badge className={getPlatformStatusColor(exp.status)} variant="outline">
+                      {exp.status === 'critical' ? 'Crítico' : exp.status === 'warning' ? 'Alerta' : 'Activo'}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
