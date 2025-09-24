@@ -26,10 +26,6 @@ interface Hotel {
   };
   branding?: {
     logo?: string;
-    colores?: {
-      primario: string;
-      secundario: string;
-    };
   };
   theme?: {
     layout_id: string;
@@ -54,10 +50,7 @@ const Hotels = () => {
         permisos: ["modificar_imagenes", "editar_textos", "gestionar_anuncios"]
       },
       branding: {
-        colores: {
-          primario: "#1e40af",
-          secundario: "#f59e0b"
-        }
+        logo: undefined
       },
       theme: {
         layout_id: "modern_01",
@@ -78,10 +71,7 @@ const Hotels = () => {
         permisos: ["modificar_imagenes", "editar_textos"]
       },
       branding: {
-        colores: {
-          primario: "#059669",
-          secundario: "#dc2626"
-        }
+        logo: undefined
       },
       theme: {
         layout_id: "beach_01",
@@ -102,8 +92,6 @@ const Hotels = () => {
     tiene_pantallas_digitales: false,
     usuario_nombre: "",
     usuario_email: "",
-    primario: "#1e40af",
-    secundario: "#f59e0b",
     layout_id: "modern_01"
   });
 
@@ -122,10 +110,7 @@ const Hotels = () => {
         permisos: ["modificar_imagenes", "editar_textos"]
       } : undefined,
       branding: {
-        colores: {
-          primario: formData.primario,
-          secundario: formData.secundario
-        }
+        logo: undefined
       },
       theme: {
         layout_id: formData.layout_id,
@@ -144,8 +129,6 @@ const Hotels = () => {
       tiene_pantallas_digitales: false,
       usuario_nombre: "",
       usuario_email: "",
-      primario: "#1e40af",
-      secundario: "#f59e0b",
       layout_id: "modern_01"
     });
     
@@ -166,8 +149,6 @@ const Hotels = () => {
       tiene_pantallas_digitales: hotel.tiene_pantallas_digitales,
       usuario_nombre: hotel.usuario_hotel?.nombre || "",
       usuario_email: hotel.usuario_hotel?.email || "",
-      primario: hotel.branding?.colores?.primario || "#1e40af",
-      secundario: hotel.branding?.colores?.secundario || "#f59e0b",
       layout_id: hotel.theme?.layout_id || "modern_01"
     });
     setIsEditDialogOpen(true);
@@ -190,10 +171,7 @@ const Hotels = () => {
         permisos: ["modificar_imagenes", "editar_textos"]
       } : undefined,
       branding: {
-        colores: {
-          primario: formData.primario,
-          secundario: formData.secundario
-        }
+        logo: undefined
       },
       theme: {
         layout_id: formData.layout_id,
@@ -217,8 +195,6 @@ const Hotels = () => {
       tiene_pantallas_digitales: false,
       usuario_nombre: "",
       usuario_email: "",
-      primario: "#1e40af",
-      secundario: "#f59e0b",
       layout_id: "modern_01"
     });
     
@@ -294,28 +270,6 @@ const Hotels = () => {
                       <SelectItem value="America/Tijuana">Tijuana</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="primario">Color Primario</Label>
-                    <Input
-                      id="primario"
-                      type="color"
-                      value={formData.primario}
-                      onChange={(e) => setFormData({...formData, primario: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="secundario">Color Secundario</Label>
-                    <Input
-                      id="secundario"
-                      type="color"
-                      value={formData.secundario}
-                      onChange={(e) => setFormData({...formData, secundario: e.target.value})}
-                    />
-                  </div>
                 </div>
                 
                 <div className="grid gap-2">
@@ -443,28 +397,6 @@ const Hotels = () => {
                       <SelectItem value="America/Tijuana">Tijuana</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="edit-primario">Color Primario</Label>
-                    <Input
-                      id="edit-primario"
-                      type="color"
-                      value={formData.primario}
-                      onChange={(e) => setFormData({...formData, primario: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="edit-secundario">Color Secundario</Label>
-                    <Input
-                      id="edit-secundario"
-                      type="color"
-                      value={formData.secundario}
-                      onChange={(e) => setFormData({...formData, secundario: e.target.value})}
-                    />
-                  </div>
                 </div>
                 
                 <div className="grid gap-2">
