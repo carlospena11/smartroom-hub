@@ -188,7 +188,8 @@ const Hotels = () => {
         }
       },
       theme: {
-        layout: formData.layout
+        layout_id: formData.layout_id,
+        layout_name: formData.layout_id === "modern_01" ? "Moderno Elegante" : "Otro Layout"
       }
     };
 
@@ -199,9 +200,14 @@ const Hotels = () => {
       nombre: "",
       codigo_hotel: "",
       timezone: "UTC",
+      cantidad_habitaciones: 50,
+      tiene_anuncios_eventos: false,
+      tiene_pantallas_digitales: false,
+      usuario_nombre: "",
+      usuario_email: "",
       primario: "#1e40af",
       secundario: "#f59e0b",
-      layout: "modern"
+      layout_id: "modern_01"
     });
     
     toast({
@@ -451,14 +457,16 @@ const Hotels = () => {
                 
                 <div className="grid gap-2">
                   <Label htmlFor="edit-layout">Layout</Label>
-                  <Select value={formData.layout} onValueChange={(value) => setFormData({...formData, layout: value})}>
+                  <Select value={formData.layout_id} onValueChange={(value) => setFormData({...formData, layout_id: value})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="modern">Moderno</SelectItem>
-                      <SelectItem value="classic">Clásico</SelectItem>
-                      <SelectItem value="minimal">Minimalista</SelectItem>
+                      <SelectItem value="modern_01">Moderno Elegante</SelectItem>
+                      <SelectItem value="classic_01">Clásico Tradicional</SelectItem>
+                      <SelectItem value="minimal_01">Minimalista Clean</SelectItem>
+                      <SelectItem value="beach_01">Tropical Beach</SelectItem>
+                      <SelectItem value="business_01">Corporativo Business</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
