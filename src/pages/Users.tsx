@@ -106,6 +106,7 @@ const Users = () => {
   const [formData, setFormData] = useState({
     nombre: "",
     email: "",
+    password: "",
     tipo: "platform" as "platform" | "client",
     tenant_role: "viewer" as PlatformUser["tenant_role"],
     hotel_id: "1",
@@ -157,6 +158,15 @@ const Users = () => {
   ];
 
   const handleCreateUser = () => {
+    if (!formData.password) {
+      toast({
+        title: "Error",
+        description: "La contraseña es requerida para crear un usuario.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (formData.tipo === "platform") {
       const newUser: PlatformUser = {
         id: Date.now().toString(),
@@ -187,6 +197,7 @@ const Users = () => {
     setFormData({
       nombre: "",
       email: "",
+      password: "",
       tipo: "platform",
       tenant_role: "viewer",
       hotel_id: "1",
@@ -260,11 +271,20 @@ const Users = () => {
       setClientUsers(clientUsers.map(u => u.id === editingUser.id ? updatedUser : u));
     }
 
+    // Handle password update if provided
+    if (formData.password.trim()) {
+      toast({
+        title: "Contraseña actualizada",
+        description: "La contraseña del usuario ha sido actualizada exitosamente.",
+      });
+    }
+
     setIsEditDialogOpen(false);
     setEditingUser(null);
     setFormData({
       nombre: "",
       email: "",
+      password: "",
       tipo: "platform",
       tenant_role: "viewer",
       hotel_id: "1",
@@ -369,6 +389,17 @@ const Users = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="juan.perez@ejemplo.com"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    placeholder="••••••••"
                   />
                 </div>
 
@@ -492,6 +523,17 @@ const Users = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="juan.perez@ejemplo.com"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-password">Nueva Contraseña</Label>
+                  <Input
+                    id="edit-password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    placeholder="Dejar vacío para mantener contraseña actual"
                   />
                 </div>
 
