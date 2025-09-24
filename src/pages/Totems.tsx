@@ -1,0 +1,418 @@
+import { useState } from "react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Edit, Trash2, Monitor, MapPin, Settings } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface Totem {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+  codigo: string;
+  tipo: "totem";
+  layout: {
+    template: string;
+    configuracion: Record<string, any>;
+  };
+  widgets: {
+    activos: string[];
+  };
+  timezone: string;
+  status: "online" | "offline" | "maintenance";
+  last_seen?: string;
+}
+
+const Totems = () => {
+  const { toast } = useToast();
+  const [totems, setTotems] = useState<Totem[]>([
+    {
+      id: "1",
+      nombre: "Tótem Lobby Principal",
+      ubicacion: "Lobby - Recepción",
+      codigo: "TT-LOBBY-001",
+      tipo: "totem",
+      layout: {
+        template: "welcome_screen",
+        configuracion: { theme: "modern", language: "es" }
+      },
+      widgets: {
+        activos: ["welcome", "weather", "events", "promotions"]
+      },
+      timezone: "America/Mexico_City",
+      status: "online",
+      last_seen: "2024-03-20 14:30"
+    },
+    {
+      id: "2",
+      nombre: "Tótem Restaurante",
+      ubicacion: "Restaurante Principal",
+      codigo: "TT-REST-001",
+      tipo: "totem",
+      layout: {
+        template: "menu_display",
+        configuracion: { theme: "elegant", language: "es" }
+      },
+      widgets: {
+        activos: ["menu", "specials", "hours"]
+      },
+      timezone: "America/Mexico_City",
+      status: "online",
+      last_seen: "2024-03-20 14:25"
+    },
+    {
+      id: "3",
+      nombre: "Tótem Piscina",
+      ubicacion: "Área de Piscina",
+      codigo: "TT-POOL-001",
+      tipo: "totem",
+      layout: {
+        template: "outdoor_display",
+        configuracion: { theme: "bright", language: "es" }
+      },
+      widgets: {
+        activos: ["weather", "activities", "safety"]
+      },
+      timezone: "America/Mexico_City",
+      status: "maintenance",
+      last_seen: "2024-03-19 16:45"
+    }
+  ]);
+
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    nombre: "",
+    ubicacion: "",
+    codigo: "",
+    template: "welcome_screen",
+    timezone: "America/Mexico_City"
+  });
+
+  const getStatusBadge = (status: Totem["status"]) => {
+    const statusConfig = {
+      online: { label: "En Línea", variant: "default" as const, color: "text-tertiary" },
+      offline: { label: "Desconectado", variant: "destructive" as const, color: "text-destructive" },
+      maintenance: { label: "Mantenimiento", variant: "secondary" as const, color: "text-warning" }
+    };
+    
+    return statusConfig[status];
+  };
+
+  const handleCreateTotem = () => {
+    const newTotem: Totem = {
+      id: Date.now().toString(),
+      nombre: formData.nombre,
+      ubicacion: formData.ubicacion,
+      codigo: formData.codigo,
+      tipo: "totem",
+      layout: {
+        template: formData.template,
+        configuracion: { theme: "modern", language: "es" }
+      },
+      widgets: {
+        activos: ["welcome", "weather"]
+      },
+      timezone: formData.timezone,
+      status: "offline"
+    };
+
+    setTotems([...totems, newTotem]);
+    setIsCreateDialogOpen(false);
+    setFormData({
+      nombre: "",
+      ubicacion: "",
+      codigo: "",
+      template: "welcome_screen",
+      timezone: "America/Mexico_City"
+    });
+    
+    toast({
+      title: "Tótem creado",
+      description: "El tótem ha sido creado exitosamente.",
+    });
+  };
+
+  const handleDeleteTotem = (id: string) => {
+    setTotems(totems.filter(t => t.id !== id));
+    toast({
+      title: "Tótem eliminado",
+      description: "El tótem ha sido eliminado exitosamente.",
+    });
+  };
+
+  const handleToggleStatus = (id: string) => {
+    setTotems(totems.map(totem => {
+      if (totem.id === id) {
+        const newStatus = totem.status === "online" ? "offline" : "online";
+        return { 
+          ...totem, 
+          status: newStatus,
+          last_seen: newStatus === "online" ? new Date().toISOString().slice(0, 16).replace('T', ' ') : totem.last_seen
+        };
+      }
+      return totem;
+    }));
+
+    toast({
+      title: "Estado actualizado",
+      description: "El estado del tótem ha sido actualizado.",
+    });
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Gestión de Tótems</h1>
+            <p className="text-muted-foreground">Administra los tótems informativos del hotel</p>
+          </div>
+          
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-primary hover:opacity-90 transition-smooth">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Tótem
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Crear Nuevo Tótem</DialogTitle>
+                <DialogDescription>
+                  Configura un nuevo tótem informativo para el hotel
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="nombre">Nombre del Tótem</Label>
+                  <Input
+                    id="nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    placeholder="Tótem Lobby Principal"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="ubicacion">Ubicación</Label>
+                  <Input
+                    id="ubicacion"
+                    value={formData.ubicacion}
+                    onChange={(e) => setFormData({...formData, ubicacion: e.target.value})}
+                    placeholder="Lobby - Recepción"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="codigo">Código del Dispositivo</Label>
+                  <Input
+                    id="codigo"
+                    value={formData.codigo}
+                    onChange={(e) => setFormData({...formData, codigo: e.target.value})}
+                    placeholder="TT-LOBBY-001"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="template">Plantilla de Visualización</Label>
+                  <Select value={formData.template} onValueChange={(value) => setFormData({...formData, template: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="welcome_screen">Pantalla de Bienvenida</SelectItem>
+                      <SelectItem value="menu_display">Mostrador de Menú</SelectItem>
+                      <SelectItem value="outdoor_display">Pantalla Exterior</SelectItem>
+                      <SelectItem value="info_kiosk">Kiosco Informativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="timezone">Zona Horaria</Label>
+                  <Select value={formData.timezone} onValueChange={(value) => setFormData({...formData, timezone: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="America/Mexico_City">Ciudad de México</SelectItem>
+                      <SelectItem value="America/Cancun">Cancún</SelectItem>
+                      <SelectItem value="America/Tijuana">Tijuana</SelectItem>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleCreateTotem} className="bg-gradient-primary">
+                  Crear Tótem
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Tótems</CardTitle>
+              <Monitor className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">{totems.length}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">En Línea</CardTitle>
+              <Monitor className="h-4 w-4 text-tertiary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-tertiary">
+                {totems.filter(t => t.status === "online").length}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Desconectados</CardTitle>
+              <Monitor className="h-4 w-4 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-destructive">
+                {totems.filter(t => t.status === "offline").length}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Mantenimiento</CardTitle>
+              <Settings className="h-4 w-4 text-warning" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-warning">
+                {totems.filter(t => t.status === "maintenance").length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Monitor className="h-5 w-5 text-primary" />
+              Tótems Registrados
+            </CardTitle>
+            <CardDescription>
+              Lista de todos los tótems informativos del sistema
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Ubicación</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Plantilla</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Widgets</TableHead>
+                  <TableHead>Última Conexión</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {totems.map((totem) => {
+                  const statusConfig = getStatusBadge(totem.status);
+                  
+                  return (
+                    <TableRow key={totem.id}>
+                      <TableCell className="font-medium">{totem.nombre}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          {totem.ubicacion}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono">
+                          {totem.codigo}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {totem.layout.template.replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusConfig.variant} className={statusConfig.color}>
+                          {statusConfig.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {totem.widgets.activos.slice(0, 2).map((widget, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {widget}
+                            </Badge>
+                          ))}
+                          {totem.widgets.activos.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{totem.widgets.activos.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {totem.last_seen || "Nunca"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleToggleStatus(totem.id)}
+                          >
+                            {totem.status === "online" ? "Desconectar" : "Conectar"}
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteTotem(totem.id)}
+                            className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default Totems;

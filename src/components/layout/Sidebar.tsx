@@ -18,6 +18,7 @@ import {
   CalendarDays
 } from "lucide-react";
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 interface NavItem {
   title: string;
@@ -94,6 +95,7 @@ const navItems: NavItem[] = [
 
 export const Sidebar = () => {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const location = useLocation();
 
   const toggleExpanded = (title: string) => {
     const newExpanded = new Set(expandedItems);
@@ -109,35 +111,56 @@ export const Sidebar = () => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems.has(item.title);
     const Icon = item.icon;
+    const isActive = item.href && location.pathname === item.href;
 
-    return (
-      <div key={item.title} className="space-y-1">
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-3 text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-smooth",
-            level > 0 && "ml-4 w-[calc(100%-1rem)]",
-            level > 1 && "ml-8 w-[calc(100%-2rem)]"
-          )}
-          onClick={() => hasChildren ? toggleExpanded(item.title) : undefined}
-        >
-          <Icon className="h-4 w-4 shrink-0" />
-          <span className="flex-1 text-left text-sm">{item.title}</span>
-          {hasChildren && (
+    if (hasChildren) {
+      return (
+        <div key={item.title} className="space-y-1">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start gap-3 text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-smooth",
+              level > 0 && "ml-4 w-[calc(100%-1rem)]",
+              level > 1 && "ml-8 w-[calc(100%-2rem)]"
+            )}
+            onClick={() => toggleExpanded(item.title)}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left text-sm">{item.title}</span>
             <div className={cn(
               "transition-transform duration-200",
               isExpanded && "rotate-90"
             )}>
               →
             </div>
+          </Button>
+          
+          {isExpanded && (
+            <div className="space-y-1">
+              {item.children?.map(child => renderNavItem(child, level + 1))}
+            </div>
           )}
+        </div>
+      );
+    }
+
+    return (
+      <div key={item.title} className="space-y-1">
+        <Button
+          variant="ghost"
+          asChild
+          className={cn(
+            "w-full justify-start gap-3 text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-smooth",
+            level > 0 && "ml-4 w-[calc(100%-1rem)]",
+            level > 1 && "ml-8 w-[calc(100%-2rem)]",
+            isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
+          )}
+        >
+          <Link to={item.href || "#"}>
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left text-sm">{item.title}</span>
+          </Link>
         </Button>
-        
-        {hasChildren && isExpanded && (
-          <div className="space-y-1">
-            {item.children?.map(child => renderNavItem(child, level + 1))}
-          </div>
-        )}
       </div>
     );
   };
