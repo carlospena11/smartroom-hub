@@ -1567,8 +1567,9 @@ const CRM = () => {
                              <Button 
                                variant="outline" 
                                size="sm"
-                               onClick={() => handleViewInvoice(invoice)}
-                               title="Ver factura"
+                               onClick={() => handleEditInvoice(invoice)}
+                               title="Editar factura"
+                               className="bg-gradient-primary text-white"
                              >
                                <Edit className="h-4 w-4" />
                              </Button>
