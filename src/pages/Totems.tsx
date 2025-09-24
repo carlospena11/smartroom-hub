@@ -385,7 +385,125 @@ const Totems = () => {
                       <SelectItem value="UTC">UTC</SelectItem>
                     </SelectContent>
                   </Select>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Editar Tótem</DialogTitle>
+                <DialogDescription>
+                  Modifica la configuración del tótem
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-nombre">Nombre del Tótem</Label>
+                  <Input
+                    id="edit-nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    placeholder="Tótem Lobby Principal"
+                  />
                 </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-ubicacion">Ubicación</Label>
+                  <Input
+                    id="edit-ubicacion"
+                    value={formData.ubicacion}
+                    onChange={(e) => setFormData({...formData, ubicacion: e.target.value})}
+                    placeholder="Lobby - Recepción"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-codigo">Código del Dispositivo</Label>
+                  <Input
+                    id="edit-codigo"
+                    value={formData.codigo}
+                    onChange={(e) => setFormData({...formData, codigo: e.target.value})}
+                    placeholder="TT-LOBBY-001"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-template">Plantilla de Visualización</Label>
+                  <Select value={formData.template} onValueChange={(value) => setFormData({...formData, template: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="welcome_screen">Pantalla de Bienvenida</SelectItem>
+                      <SelectItem value="menu_display">Mostrador de Menú</SelectItem>
+                      <SelectItem value="outdoor_display">Pantalla Exterior</SelectItem>
+                      <SelectItem value="info_kiosk">Kiosco Informativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-url_gestion">URL de Gestión</Label>
+                  <Input
+                    id="edit-url_gestion"
+                    value={formData.url_gestion}
+                    onChange={(e) => setFormData({...formData, url_gestion: e.target.value})}
+                    placeholder="https://admin.smartroom.com/totem/..."
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Configuración Web</Label>
+                  <div className="grid gap-2">
+                    <Input
+                      placeholder="Título de la página"
+                      value={formData.titulo_web}
+                      onChange={(e) => setFormData({...formData, titulo_web: e.target.value})}
+                    />
+                    <Input
+                      placeholder="Descripción"
+                      value={formData.descripcion_web}
+                      onChange={(e) => setFormData({...formData, descripcion_web: e.target.value})}
+                    />
+                    <Select value={formData.tema_web} onValueChange={(value) => setFormData({...formData, tema_web: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="modern_blue">Moderno Azul</SelectItem>
+                        <SelectItem value="elegant_gold">Elegante Dorado</SelectItem>
+                        <SelectItem value="minimal_gray">Minimalista Gris</SelectItem>
+                        <SelectItem value="vibrant_green">Vibrante Verde</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-timezone">Zona Horaria</Label>
+                  <Select value={formData.timezone} onValueChange={(value) => setFormData({...formData, timezone: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="America/Mexico_City">Ciudad de México</SelectItem>
+                      <SelectItem value="America/Cancun">Cancún</SelectItem>
+                      <SelectItem value="America/Tijuana">Tijuana</SelectItem>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdateTotem} className="bg-gradient-primary">
+                  Actualizar Tótem
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
               </div>
               
               <DialogFooter>

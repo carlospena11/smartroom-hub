@@ -15,7 +15,8 @@ import {
   Bed,
   Monitor,
   Radio,
-  CalendarDays
+  CalendarDays,
+  DollarSign
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -66,6 +67,11 @@ const navItems: NavItem[] = [
     title: "Campañas",
     icon: Calendar,
     href: "/campaigns",
+  },
+  {
+    title: "CRM",
+    icon: DollarSign,
+    href: "/crm",
   },
   {
     title: "Usuarios",

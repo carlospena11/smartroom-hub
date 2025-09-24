@@ -208,6 +208,111 @@ const Users = () => {
     setFormData({...formData, permisos: newPermisos});
   };
 
+  const handleEditUser = (user: PlatformUser | ClientUser, type: "platform" | "client") => {
+    setEditingUser(user);
+    if (type === "platform") {
+      const platformUser = user as PlatformUser;
+      setFormData({
+        ...formData,
+        nombre: platformUser.nombre,
+        email: platformUser.email,
+        tipo: "platform",
+        tenant_role: platformUser.tenant_role,
+        mfa_enabled: platformUser.mfa_enabled
+      });
+    } else {
+      const clientUser = user as ClientUser;
+      setFormData({
+        ...formData,
+        nombre: clientUser.nombre,
+        email: clientUser.email,
+        tipo: "client",
+        hotel_id: clientUser.hotel_id,
+        cargo: clientUser.cargo,
+        permisos: clientUser.permisos
+      });
+    }
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!editingUser) return;
+
+    if (formData.tipo === "platform") {
+      const updatedUser: PlatformUser = {
+        ...editingUser as PlatformUser,
+        nombre: formData.nombre,
+        email: formData.email,
+        tenant_role: formData.tenant_role,
+        mfa_enabled: formData.mfa_enabled
+      };
+      setPlatformUsers(platformUsers.map(u => u.id === editingUser.id ? updatedUser : u));
+    } else {
+      const updatedUser: ClientUser = {
+        ...editingUser as ClientUser,
+        nombre: formData.nombre,
+        email: formData.email,
+        hotel_id: formData.hotel_id,
+        hotel_name: formData.hotel_id === "1" ? "Hotel Plaza Central" : "Resort Marina Bay",
+        cargo: formData.cargo,
+        permisos: formData.permisos
+      };
+      setClientUsers(clientUsers.map(u => u.id === editingUser.id ? updatedUser : u));
+    }
+
+    setIsEditDialogOpen(false);
+    setEditingUser(null);
+    setFormData({
+      nombre: "",
+      email: "",
+      tipo: "platform",
+      tenant_role: "viewer",
+      hotel_id: "1",
+      cargo: "recepcionista",
+      permisos: [],
+      mfa_enabled: false
+    });
+    
+    toast({
+      title: "Usuario actualizado",
+      description: "El usuario ha sido actualizado exitosamente.",
+    });
+  };
+
+  const handleDeleteUser = (id: string, type: "platform" | "client") => {
+    if (type === "platform") {
+      setPlatformUsers(platformUsers.filter(u => u.id !== id));
+    } else {
+      setClientUsers(clientUsers.filter(u => u.id !== id));
+    }
+    
+    toast({
+      title: "Usuario eliminado",
+      description: "El usuario ha sido eliminado exitosamente.",
+    });
+  };
+
+  const handleToggleUserStatus = (id: string, type: "platform" | "client") => {
+    if (type === "platform") {
+      setPlatformUsers(platformUsers.map(user => 
+        user.id === id 
+          ? { ...user, status: user.status === "active" ? "inactive" : "active" } 
+          : user
+      ));
+    } else {
+      setClientUsers(clientUsers.map(user => 
+        user.id === id 
+          ? { ...user, status: user.status === "active" ? "inactive" : "active" } 
+          : user
+      ));
+    }
+    
+    toast({
+      title: "Estado actualizado",
+      description: "El estado del usuario ha sido actualizado.",
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -353,6 +458,129 @@ const Users = () => {
                 </Button>
                 <Button onClick={handleCreateUser} className="bg-gradient-primary">
                   Crear Usuario
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit User Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Editar Usuario</DialogTitle>
+                <DialogDescription>
+                  Modifica los datos del usuario
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-nombre">Nombre Completo</Label>
+                  <Input
+                    id="edit-nombre"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    placeholder="Juan Pérez"
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="juan.perez@ejemplo.com"
+                  />
+                </div>
+
+                {formData.tipo === "platform" ? (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-role">Rol del Usuario</Label>
+                      <Select value={formData.tenant_role} onValueChange={(value: PlatformUser["tenant_role"]) => setFormData({...formData, tenant_role: value})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tenant_admin">Administrador Tenant</SelectItem>
+                          <SelectItem value="hotel_admin">Administrador Hotel</SelectItem>
+                          <SelectItem value="editor">Editor de Contenido</SelectItem>
+                          <SelectItem value="viewer">Visualizador</SelectItem>
+                          <SelectItem value="ops">Operaciones</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="edit-mfa"
+                        checked={formData.mfa_enabled}
+                        onCheckedChange={(checked) => setFormData({...formData, mfa_enabled: checked})}
+                      />
+                      <Label htmlFor="edit-mfa">Habilitar Autenticación de Dos Factores</Label>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-hotel">Hotel Asignado</Label>
+                      <Select value={formData.hotel_id} onValueChange={(value) => setFormData({...formData, hotel_id: value})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Hotel Plaza Central</SelectItem>
+                          <SelectItem value="2">Resort Marina Bay</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-cargo">Cargo</Label>
+                      <Select value={formData.cargo} onValueChange={(value: ClientUser["cargo"]) => setFormData({...formData, cargo: value})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gerente_hotel">Gerente de Hotel</SelectItem>
+                          <SelectItem value="recepcionista">Recepcionista</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                          <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Permisos</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {availablePermisos.map((permiso) => (
+                          <div key={permiso} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`edit-${permiso}`}
+                              checked={formData.permisos.includes(permiso)}
+                              onChange={() => handleTogglePermiso(permiso)}
+                              className="rounded"
+                            />
+                            <Label htmlFor={`edit-${permiso}`} className="text-sm">
+                              {permiso.replace('_', ' ')}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdateUser} className="bg-gradient-primary">
+                  Actualizar Usuario
                 </Button>
               </DialogFooter>
             </DialogContent>
