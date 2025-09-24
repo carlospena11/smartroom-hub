@@ -63,6 +63,33 @@ interface Payment {
 const CRM = () => {
   const { toast } = useToast();
   
+  // Estados para manejar dialogs
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isEditingInvoice, setIsEditingInvoice] = useState(false);
+  
+  // Función para manejar ver factura
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsEditingInvoice(false);
+    setIsInvoiceDialogOpen(true);
+  };
+
+  // Función para manejar editar factura
+  const handleEditInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsEditingInvoice(true);
+    setIsInvoiceDialogOpen(true);
+  };
+
+  // Función para eliminar factura
+  const handleDeleteInvoice = (invoiceId: string) => {
+    setInvoices(invoices.filter(inv => inv.id !== invoiceId));
+    toast({
+      title: "Factura eliminada",
+      description: "La factura ha sido eliminada exitosamente.",
+    });
+  };
+
   const [services, setServices] = useState<Service[]>([
     {
       id: "1",
@@ -990,6 +1017,121 @@ const CRM = () => {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
+                  
+                  {/* Dialog para ver/editar factura */}
+                  <Dialog open={selectedInvoice !== null} onOpenChange={(open) => {
+                    if (!open) {
+                      setSelectedInvoice(null);
+                      setIsEditingInvoice(false);
+                    }
+                  }}>
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {isEditingInvoice ? "Editar Factura" : "Detalles de Factura"}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {selectedInvoice?.numero_factura}
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {selectedInvoice && (
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                              <Label>Hotel</Label>
+                              <Input 
+                                value={selectedInvoice.hotel_name} 
+                                disabled={!isEditingInvoice}
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label>Estado</Label>
+                              <Badge variant={
+                                selectedInvoice.status === "pagada" ? "default" :
+                                selectedInvoice.status === "pendiente" ? "outline" : "destructive"
+                              }>
+                                {selectedInvoice.status === "pagada" ? "Pagada" :
+                                 selectedInvoice.status === "pendiente" ? "Pendiente" : "Vencida"}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                              <Label>Fecha de Emisión</Label>
+                              <Input 
+                                type="date"
+                                value={selectedInvoice.fecha_emision} 
+                                disabled={!isEditingInvoice}
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label>Fecha de Vencimiento</Label>
+                              <Input 
+                                type="date"
+                                value={selectedInvoice.fecha_vencimiento} 
+                                disabled={!isEditingInvoice}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid gap-2">
+                            <Label>Servicios Incluidos</Label>
+                            <div className="p-3 border rounded-md bg-muted/50">
+                              {selectedInvoice.servicios.map((servicio, index) => (
+                                <div key={index} className="text-sm">
+                                  • {servicio}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="grid gap-2">
+                            <Label>Monto Total</Label>
+                            <div className="text-2xl font-bold text-primary">
+                              ${selectedInvoice.monto_total.toLocaleString()}
+                            </div>
+                          </div>
+                          
+                          {selectedInvoice.metodo_pago && (
+                            <div className="grid gap-2">
+                              <Label>Método de Pago</Label>
+                              <Input 
+                                value={selectedInvoice.metodo_pago} 
+                                disabled={!isEditingInvoice}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                          setSelectedInvoice(null);
+                          setIsEditingInvoice(false);
+                        }}>
+                          Cerrar
+                        </Button>
+                        {!isEditingInvoice && (
+                          <Button onClick={() => setIsEditingInvoice(true)}>
+                            Editar
+                          </Button>
+                        )}
+                        {isEditingInvoice && (
+                          <Button onClick={() => {
+                            toast({
+                              title: "Factura actualizada",
+                              description: "Los cambios han sido guardados exitosamente.",
+                            });
+                            setIsEditingInvoice(false);
+                          }}>
+                            Guardar Cambios
+                          </Button>
+                        )}
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
               
@@ -1029,10 +1171,18 @@ const CRM = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right space-x-2">
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleViewInvoice(invoice)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteInvoice(invoice.id)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </TableCell>
