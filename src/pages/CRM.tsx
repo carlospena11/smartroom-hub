@@ -17,12 +17,19 @@ interface Service {
   id: string;
   hotel_id: string;
   hotel_name: string;
+  hotel_telefono: string;
+  responsable_administrativo: string;
+  facturacion_nombre: string;
   nombre: string;
   descripcion: string;
-  precio_mensual: number;
+  precio_unitario: number;
+  cantidad_habitaciones: number;
+  cantidad_tv: number;
+  precio_total: number;
   tipo: "software" | "hardware" | "soporte" | "consultoria";
   status: "activo" | "suspendido" | "cancelado";
   fecha_inicio: string;
+  fecha_caducidad: string;
   fecha_renovacion?: string;
 }
 
@@ -60,24 +67,38 @@ const CRM = () => {
       id: "1",
       hotel_id: "1",
       hotel_name: "Hotel Plaza Central",
+      hotel_telefono: "+1-555-0123",
+      responsable_administrativo: "María González",
+      facturacion_nombre: "Hotel Plaza Central S.A.",
       nombre: "SmartRoom Basic",
       descripcion: "Gestión básica de contenido y dispositivos",
-      precio_mensual: 2500,
+      precio_unitario: 50,
+      cantidad_habitaciones: 45,
+      cantidad_tv: 50,
+      precio_total: 2500,
       tipo: "software",
       status: "activo",
       fecha_inicio: "2024-01-01",
+      fecha_caducidad: "2024-12-31",
       fecha_renovacion: "2024-04-01"
     },
     {
       id: "2",
-      hotel_id: "2",
+      hotel_id: "2", 
       hotel_name: "Resort Marina Bay",
+      hotel_telefono: "+1-555-0456",
+      responsable_administrativo: "Carlos Ruiz",
+      facturacion_nombre: "Resort Marina Bay LLC",
       nombre: "SmartRoom Premium + Soporte",
       descripcion: "Gestión avanzada con soporte 24/7",
-      precio_mensual: 4500,
+      precio_unitario: 75,
+      cantidad_habitaciones: 60,
+      cantidad_tv: 65,
+      precio_total: 4875,
       tipo: "software",
       status: "activo",
       fecha_inicio: "2024-02-01",
+      fecha_caducidad: "2024-12-31",
       fecha_renovacion: "2024-05-01"
     }
   ]);
@@ -130,9 +151,15 @@ const CRM = () => {
   
   const [serviceFormData, setServiceFormData] = useState({
     hotel_id: "1",
+    hotel_telefono: "",
+    responsable_administrativo: "",
+    facturacion_nombre: "",
     nombre: "",
     descripcion: "",
-    precio_mensual: "",
+    precio_unitario: "",
+    cantidad_habitaciones: "",
+    cantidad_tv: "",
+    fecha_caducidad: "",
     tipo: "software" as Service["tipo"]
   });
 
@@ -169,25 +196,43 @@ const CRM = () => {
   };
 
   const handleCreateService = () => {
+    const precioUnitario = parseFloat(serviceFormData.precio_unitario);
+    const cantidadHabitaciones = parseInt(serviceFormData.cantidad_habitaciones);
+    const cantidadTv = parseInt(serviceFormData.cantidad_tv);
+    const precioTotal = precioUnitario * (cantidadHabitaciones + cantidadTv);
+
     const newService: Service = {
       id: Date.now().toString(),
       hotel_id: serviceFormData.hotel_id,
       hotel_name: serviceFormData.hotel_id === "1" ? "Hotel Plaza Central" : "Resort Marina Bay",
+      hotel_telefono: serviceFormData.hotel_telefono,
+      responsable_administrativo: serviceFormData.responsable_administrativo,
+      facturacion_nombre: serviceFormData.facturacion_nombre,
       nombre: serviceFormData.nombre,
       descripcion: serviceFormData.descripcion,
-      precio_mensual: parseFloat(serviceFormData.precio_mensual),
+      precio_unitario: precioUnitario,
+      cantidad_habitaciones: cantidadHabitaciones,
+      cantidad_tv: cantidadTv,
+      precio_total: precioTotal,
       tipo: serviceFormData.tipo,
       status: "activo",
-      fecha_inicio: new Date().toISOString().split('T')[0]
+      fecha_inicio: new Date().toISOString().split('T')[0],
+      fecha_caducidad: serviceFormData.fecha_caducidad
     };
 
     setServices([...services, newService]);
     setIsServiceDialogOpen(false);
     setServiceFormData({
       hotel_id: "1",
+      hotel_telefono: "",
+      responsable_administrativo: "",
+      facturacion_nombre: "",
       nombre: "",
       descripcion: "",
-      precio_mensual: "",
+      precio_unitario: "",
+      cantidad_habitaciones: "",
+      cantidad_tv: "",
+      fecha_caducidad: "",
       tipo: "software"
     });
     
@@ -201,7 +246,7 @@ const CRM = () => {
     const selectedServices = services.filter(s => 
       s.hotel_id === invoiceFormData.hotel_id && s.status === "activo"
     );
-    const total = selectedServices.reduce((sum, s) => sum + s.precio_mensual, 0);
+    const total = selectedServices.reduce((sum, s) => sum + s.precio_total, 0);
 
     const newInvoice: Invoice = {
       id: Date.now().toString(),
@@ -271,7 +316,7 @@ const CRM = () => {
 
   const totalMensualRecurrente = services
     .filter(s => s.status === "activo")
-    .reduce((sum, s) => sum + s.precio_mensual, 0);
+    .reduce((sum, s) => sum + s.precio_total, 0);
 
   const facturasPendientes = invoices.filter(i => i.status === "pendiente").length;
   const montoFacturasPendientes = invoices
@@ -407,14 +452,87 @@ const CRM = () => {
                         </div>
                         
                         <div className="grid gap-2">
-                          <Label htmlFor="service-price">Precio Mensual</Label>
+                          <Label htmlFor="service-phone">Teléfono del Hotel</Label>
                           <Input
-                            id="service-price"
-                            type="number"
-                            value={serviceFormData.precio_mensual}
-                            onChange={(e) => setServiceFormData({...serviceFormData, precio_mensual: e.target.value})}
-                            placeholder="2500"
+                            id="service-phone"
+                            value={serviceFormData.hotel_telefono}
+                            onChange={(e) => setServiceFormData({...serviceFormData, hotel_telefono: e.target.value})}
+                            placeholder="+1-555-0123"
                           />
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor="service-admin">Responsable Administrativo</Label>
+                          <Input
+                            id="service-admin"
+                            value={serviceFormData.responsable_administrativo}
+                            onChange={(e) => setServiceFormData({...serviceFormData, responsable_administrativo: e.target.value})}
+                            placeholder="María González"
+                          />
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor="service-billing">Facturación a Nombre de</Label>
+                          <Input
+                            id="service-billing"
+                            value={serviceFormData.facturacion_nombre}
+                            onChange={(e) => setServiceFormData({...serviceFormData, facturacion_nombre: e.target.value})}
+                            placeholder="Hotel Plaza Central S.A."
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="service-unit-price">Precio Unitario</Label>
+                            <Input
+                              id="service-unit-price"
+                              type="number"
+                              value={serviceFormData.precio_unitario}
+                              onChange={(e) => setServiceFormData({...serviceFormData, precio_unitario: e.target.value})}
+                              placeholder="50"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="service-expiry">Fecha Caducidad</Label>
+                            <Input
+                              id="service-expiry"
+                              type="date"
+                              value={serviceFormData.fecha_caducidad}
+                              onChange={(e) => setServiceFormData({...serviceFormData, fecha_caducidad: e.target.value})}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="service-rooms">Cantidad Habitaciones</Label>
+                            <Input
+                              id="service-rooms"
+                              type="number"
+                              value={serviceFormData.cantidad_habitaciones}
+                              onChange={(e) => setServiceFormData({...serviceFormData, cantidad_habitaciones: e.target.value})}
+                              placeholder="45"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="service-tvs">Cantidad TV/Dispositivos</Label>
+                            <Input
+                              id="service-tvs"
+                              type="number"
+                              value={serviceFormData.cantidad_tv}
+                              onChange={(e) => setServiceFormData({...serviceFormData, cantidad_tv: e.target.value})}
+                              placeholder="50"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label>Precio Total Calculado</Label>
+                          <div className="p-3 bg-muted rounded-md font-medium">
+                            ${((parseFloat(serviceFormData.precio_unitario) || 0) * 
+                               ((parseInt(serviceFormData.cantidad_habitaciones) || 0) + 
+                                (parseInt(serviceFormData.cantidad_tv) || 0))).toLocaleString()}
+                          </div>
                         </div>
                         
                         <div className="grid gap-2">
@@ -452,10 +570,11 @@ const CRM = () => {
                     <TableRow>
                       <TableHead>Hotel</TableHead>
                       <TableHead>Servicio</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Precio Mensual</TableHead>
+                      <TableHead>Responsable/Tel</TableHead>
+                      <TableHead>Habitaciones/TV</TableHead>
+                      <TableHead>Precio Total</TableHead>
+                      <TableHead>Caducidad</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead>Fecha Inicio</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -465,25 +584,54 @@ const CRM = () => {
                       
                       return (
                         <TableRow key={service.id}>
-                          <TableCell className="font-medium">{service.hotel_name}</TableCell>
+                          <TableCell className="font-medium">
+                            <div>
+                              <div>{service.hotel_name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {service.facturacion_nombre}
+                              </div>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div>
                               <div className="font-medium">{service.nombre}</div>
                               <div className="text-sm text-muted-foreground">{service.descripcion}</div>
+                              <Badge variant="outline" className="mt-1">
+                                {service.tipo}
+                              </Badge>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">
-                              {service.tipo}
-                            </Badge>
+                            <div>
+                              <div className="font-medium">{service.responsable_administrativo}</div>
+                              <div className="text-sm text-muted-foreground">{service.hotel_telefono}</div>
+                            </div>
                           </TableCell>
-                          <TableCell>${service.precio_mensual.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <div>
+                              <div>{service.cantidad_habitaciones} habitaciones</div>
+                              <div className="text-sm text-muted-foreground">{service.cantidad_tv} TV/dispositivos</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">${service.precio_total.toLocaleString()}</div>
+                              <div className="text-sm text-muted-foreground">${service.precio_unitario}/unidad</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="text-sm">{service.fecha_caducidad}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(service.fecha_caducidad) > new Date() ? 'Vigente' : 'Vencido'}
+                              </div>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Badge variant={statusConfig.variant}>
                               {statusConfig.label}
                             </Badge>
                           </TableCell>
-                          <TableCell>{service.fecha_inicio}</TableCell>
                           <TableCell className="text-right space-x-2">
                             <Button variant="outline" size="sm">
                               <Edit className="h-4 w-4" />
