@@ -181,6 +181,14 @@ const Hotels = () => {
       nombre: formData.nombre,
       codigo_hotel: formData.codigo_hotel,
       timezone: formData.timezone,
+      cantidad_habitaciones: formData.cantidad_habitaciones,
+      tiene_anuncios_eventos: formData.tiene_anuncios_eventos,
+      tiene_pantallas_digitales: formData.tiene_pantallas_digitales,
+      usuario_hotel: formData.usuario_nombre ? {
+        nombre: formData.usuario_nombre,
+        email: formData.usuario_email,
+        permisos: ["modificar_imagenes", "editar_textos"]
+      } : undefined,
       branding: {
         colores: {
           primario: formData.primario,
@@ -189,7 +197,11 @@ const Hotels = () => {
       },
       theme: {
         layout_id: formData.layout_id,
-        layout_name: formData.layout_id === "modern_01" ? "Moderno Elegante" : "Otro Layout"
+        layout_name: formData.layout_id === "modern_01" ? "Moderno Elegante" : 
+                     formData.layout_id === "classic_01" ? "Clásico Tradicional" :
+                     formData.layout_id === "minimal_01" ? "Minimalista Clean" :
+                     formData.layout_id === "beach_01" ? "Tropical Beach" :
+                     formData.layout_id === "business_01" ? "Corporativo Business" : "Otro Layout"
       }
     };
 
@@ -456,7 +468,61 @@ const Hotels = () => {
                 </div>
                 
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-layout">Layout</Label>
+                  <Label htmlFor="edit-habitaciones">Cantidad de Habitaciones</Label>
+                  <Input
+                    id="edit-habitaciones"
+                    type="number"
+                    min="1"
+                    value={formData.cantidad_habitaciones}
+                    onChange={(e) => setFormData({...formData, cantidad_habitaciones: parseInt(e.target.value)})}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-usuario_hotel">Usuario del Hotel</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Nombre completo"
+                      value={formData.usuario_nombre}
+                      onChange={(e) => setFormData({...formData, usuario_nombre: e.target.value})}
+                    />
+                    <Input
+                      placeholder="email@hotel.com"
+                      type="email"
+                      value={formData.usuario_email}
+                      onChange={(e) => setFormData({...formData, usuario_email: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Características del Hotel</Label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="edit-anuncios_eventos"
+                        checked={formData.tiene_anuncios_eventos}
+                        onChange={(e) => setFormData({...formData, tiene_anuncios_eventos: e.target.checked})}
+                        className="rounded"
+                      />
+                      <Label htmlFor="edit-anuncios_eventos">Tiene anuncios de eventos</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="edit-pantallas_digitales"
+                        checked={formData.tiene_pantallas_digitales}
+                        onChange={(e) => setFormData({...formData, tiene_pantallas_digitales: e.target.checked})}
+                        className="rounded"
+                      />
+                      <Label htmlFor="edit-pantallas_digitales">Tiene pantallas digitales</Label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-layout">Layout/Skin TV</Label>
                   <Select value={formData.layout_id} onValueChange={(value) => setFormData({...formData, layout_id: value})}>
                     <SelectTrigger>
                       <SelectValue />
