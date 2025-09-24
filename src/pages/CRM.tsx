@@ -75,6 +75,12 @@ const CRM = () => {
   const [isCustomizingInvoice, setIsCustomizingInvoice] = useState(false);
   const [invoiceCustomHeader, setInvoiceCustomHeader] = useState('');
   const [invoicePreviewHtml, setInvoicePreviewHtml] = useState('');
+  const [editInvoiceData, setEditInvoiceData] = useState({
+    status: 'pendiente' as Invoice['status'],
+    metodo_pago: '',
+    fecha_pago: '',
+    fecha_vencimiento: ''
+  });
   
   // Función para manejar ver factura
   const handleViewInvoice = (invoice: Invoice) => {
@@ -87,7 +93,46 @@ const CRM = () => {
   const handleEditInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setIsEditingInvoice(true);
+    setEditInvoiceData({
+      status: invoice.status,
+      metodo_pago: invoice.metodo_pago || '',
+      fecha_pago: invoice.fecha_pago || '',
+      fecha_vencimiento: invoice.fecha_vencimiento
+    });
     setIsInvoiceDialogOpen(true);
+  };
+
+  // Función para guardar cambios de factura
+  const handleSaveInvoiceChanges = () => {
+    if (!selectedInvoice) return;
+
+    const updatedInvoice: Invoice = {
+      ...selectedInvoice,
+      status: editInvoiceData.status,
+      metodo_pago: editInvoiceData.metodo_pago || undefined,
+      fecha_pago: editInvoiceData.fecha_pago || undefined,
+      fecha_vencimiento: editInvoiceData.fecha_vencimiento
+    };
+
+    setInvoices(invoices.map(inv => 
+      inv.id === selectedInvoice.id ? updatedInvoice : inv
+    ));
+
+    // Si se marca como pagada y no tiene fecha de pago, usar la fecha actual
+    if (editInvoiceData.status === 'pagada' && !editInvoiceData.fecha_pago) {
+      updatedInvoice.fecha_pago = new Date().toISOString().split('T')[0];
+      setInvoices(invoices.map(inv => 
+        inv.id === selectedInvoice.id ? updatedInvoice : inv
+      ));
+    }
+
+    setIsEditingInvoice(false);
+    setSelectedInvoice(null);
+    
+    toast({
+      title: "Factura actualizada",
+      description: "Los cambios han sido guardados exitosamente.",
+    });
   };
 
   // Función para eliminar factura
@@ -1230,76 +1275,125 @@ const CRM = () => {
                         </DialogDescription>
                       </DialogHeader>
                       
-                      {selectedInvoice && (
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                              <Label>Hotel</Label>
-                              <Input 
-                                value={selectedInvoice.hotel_name} 
-                                disabled={!isEditingInvoice}
-                              />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label>Estado</Label>
-                              <Badge variant={
-                                selectedInvoice.status === "pagada" ? "default" :
-                                selectedInvoice.status === "pendiente" ? "outline" : "destructive"
-                              }>
-                                {selectedInvoice.status === "pagada" ? "Pagada" :
-                                 selectedInvoice.status === "pendiente" ? "Pendiente" : "Vencida"}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                              <Label>Fecha de Emisión</Label>
-                              <Input 
-                                type="date"
-                                value={selectedInvoice.fecha_emision} 
-                                disabled={!isEditingInvoice}
-                              />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label>Fecha de Vencimiento</Label>
-                              <Input 
-                                type="date"
-                                value={selectedInvoice.fecha_vencimiento} 
-                                disabled={!isEditingInvoice}
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="grid gap-2">
-                            <Label>Servicios Incluidos</Label>
-                            <div className="p-3 border rounded-md bg-muted/50">
-                              {selectedInvoice.servicios.map((servicio, index) => (
-                                <div key={index} className="text-sm">
-                                  • {servicio}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          <div className="grid gap-2">
-                            <Label>Monto Total</Label>
-                            <div className="text-2xl font-bold text-primary">
-                              ${selectedInvoice.monto_total.toLocaleString()}
-                            </div>
-                          </div>
-                          
-                          {selectedInvoice.metodo_pago && (
-                            <div className="grid gap-2">
-                              <Label>Método de Pago</Label>
-                              <Input 
-                                value={selectedInvoice.metodo_pago} 
-                                disabled={!isEditingInvoice}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
+                       {selectedInvoice && (
+                         <div className="grid gap-4 py-4">
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="grid gap-2">
+                               <Label>Hotel</Label>
+                               <Input 
+                                 value={selectedInvoice.hotel_name} 
+                                 disabled
+                               />
+                             </div>
+                             <div className="grid gap-2">
+                               <Label>Estado</Label>
+                               {isEditingInvoice ? (
+                                 <Select 
+                                   value={editInvoiceData.status} 
+                                   onValueChange={(value: Invoice['status']) => 
+                                     setEditInvoiceData({...editInvoiceData, status: value})
+                                   }
+                                 >
+                                   <SelectTrigger>
+                                     <SelectValue />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     <SelectItem value="pendiente">Pendiente</SelectItem>
+                                     <SelectItem value="pagada">Pagada</SelectItem>
+                                     <SelectItem value="vencida">Vencida</SelectItem>
+                                   </SelectContent>
+                                 </Select>
+                               ) : (
+                                 <Badge variant={
+                                   selectedInvoice.status === "pagada" ? "default" :
+                                   selectedInvoice.status === "pendiente" ? "outline" : "destructive"
+                                 }>
+                                   {selectedInvoice.status === "pagada" ? "Pagada" :
+                                    selectedInvoice.status === "pendiente" ? "Pendiente" : "Vencida"}
+                                 </Badge>
+                               )}
+                             </div>
+                           </div>
+                           
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="grid gap-2">
+                               <Label>Fecha de Emisión</Label>
+                               <Input 
+                                 type="date"
+                                 value={selectedInvoice.fecha_emision} 
+                                 disabled
+                               />
+                             </div>
+                             <div className="grid gap-2">
+                               <Label>Fecha de Vencimiento</Label>
+                               <Input 
+                                 type="date"
+                                 value={isEditingInvoice ? editInvoiceData.fecha_vencimiento : selectedInvoice.fecha_vencimiento}
+                                 onChange={(e) => isEditingInvoice && setEditInvoiceData({...editInvoiceData, fecha_vencimiento: e.target.value})}
+                                 disabled={!isEditingInvoice}
+                               />
+                             </div>
+                           </div>
+
+                           {(editInvoiceData.status === 'pagada' || selectedInvoice.status === 'pagada') && (
+                             <div className="grid grid-cols-2 gap-4">
+                               <div className="grid gap-2">
+                                 <Label>Método de Pago</Label>
+                                 {isEditingInvoice ? (
+                                   <Select 
+                                     value={editInvoiceData.metodo_pago} 
+                                     onValueChange={(value) => 
+                                       setEditInvoiceData({...editInvoiceData, metodo_pago: value})
+                                     }
+                                   >
+                                     <SelectTrigger>
+                                       <SelectValue placeholder="Seleccionar método" />
+                                     </SelectTrigger>
+                                     <SelectContent>
+                                       <SelectItem value="transferencia">Transferencia</SelectItem>
+                                       <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                                       <SelectItem value="efectivo">Efectivo</SelectItem>
+                                       <SelectItem value="cheque">Cheque</SelectItem>
+                                     </SelectContent>
+                                   </Select>
+                                 ) : (
+                                   <Input 
+                                     value={selectedInvoice.metodo_pago || 'No especificado'} 
+                                     disabled
+                                   />
+                                 )}
+                               </div>
+                               <div className="grid gap-2">
+                                 <Label>Fecha de Pago</Label>
+                                 <Input 
+                                   type="date"
+                                   value={isEditingInvoice ? editInvoiceData.fecha_pago : (selectedInvoice.fecha_pago || '')}
+                                   onChange={(e) => isEditingInvoice && setEditInvoiceData({...editInvoiceData, fecha_pago: e.target.value})}
+                                   disabled={!isEditingInvoice}
+                                 />
+                               </div>
+                             </div>
+                           )}
+                           
+                           <div className="grid gap-2">
+                             <Label>Servicios Incluidos</Label>
+                             <div className="p-3 border rounded-md bg-muted/50">
+                               {selectedInvoice.servicios.map((servicio, index) => (
+                                 <div key={index} className="text-sm">
+                                   • {servicio}
+                                 </div>
+                               ))}
+                             </div>
+                           </div>
+                           
+                           <div className="grid gap-2">
+                             <Label>Monto Total</Label>
+                             <div className="text-2xl font-bold text-primary">
+                               ${selectedInvoice.monto_total.toLocaleString()}
+                             </div>
+                           </div>
+                         </div>
+                       )}
                       
                        <DialogFooter>
                          <Button variant="outline" onClick={() => {
@@ -1330,13 +1424,7 @@ const CRM = () => {
                            </Button>
                          )}
                          {isEditingInvoice && (
-                           <Button onClick={() => {
-                             toast({
-                               title: "Factura actualizada",
-                               description: "Los cambios han sido guardados exitosamente.",
-                             });
-                             setIsEditingInvoice(false);
-                           }}>
+                           <Button onClick={handleSaveInvoiceChanges}>
                              Guardar Cambios
                            </Button>
                          )}
