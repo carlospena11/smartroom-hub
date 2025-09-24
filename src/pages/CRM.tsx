@@ -389,6 +389,9 @@ const CRM = () => {
     });
   };
 
+  console.log("Invoices data:", invoices);
+  console.log("Active tab:", activeTab);
+  
   const totalMensualRecurrente = services
     .filter(s => s.status === "activo")
     .reduce((sum, s) => sum + s.precio_total, 0);
@@ -972,37 +975,46 @@ const CRM = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invoices.map((invoice) => {
-                      const statusConfig = getInvoiceStatusBadge(invoice.status);
-                      
-                      return (
-                        <TableRow key={invoice.id}>
-                          <TableCell className="font-mono">{invoice.numero_factura}</TableCell>
-                          <TableCell>{invoice.hotel_name}</TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {invoice.servicios.join(", ")}
-                            </div>
-                          </TableCell>
-                          <TableCell>${invoice.monto_total.toLocaleString()}</TableCell>
-                          <TableCell>{invoice.fecha_emision}</TableCell>
-                          <TableCell>{invoice.fecha_vencimiento}</TableCell>
-                          <TableCell>
-                            <Badge variant={statusConfig.variant}>
-                              {statusConfig.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right space-x-2">
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {invoices.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
+                          No hay facturas registradas
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      invoices.map((invoice) => {
+                        console.log("Rendering invoice:", invoice);
+                        const statusConfig = getInvoiceStatusBadge(invoice.status);
+                        
+                        return (
+                          <TableRow key={invoice.id}>
+                            <TableCell className="font-mono">{invoice.numero_factura}</TableCell>
+                            <TableCell>{invoice.hotel_name}</TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {invoice.servicios.join(", ")}
+                              </div>
+                            </TableCell>
+                            <TableCell>${invoice.monto_total.toLocaleString()}</TableCell>
+                            <TableCell>{invoice.fecha_emision}</TableCell>
+                            <TableCell>{invoice.fecha_vencimiento}</TableCell>
+                            <TableCell>
+                              <Badge variant={statusConfig.variant}>
+                                {statusConfig.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right space-x-2">
+                              <Button variant="outline" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
