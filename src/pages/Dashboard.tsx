@@ -6,20 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Building2, 
   DollarSign, 
-  Users,
-  FileText,
+  Bed,
   CheckCircle,
   Clock,
   AlertCircle,
-  TrendingUp
+  TrendingUp,
+  FileText
 } from "lucide-react";
 
 // Mock CRM data
 const crmData = {
   stats: {
-    clients: { total: 47, trend: { value: 15.8, isPositive: true } },
-    monthlyRevenue: { total: 186750, trend: { value: 23.4, isPositive: true } },
+    hotels: { total: 47, trend: { value: 15.8, isPositive: true } },
+    rooms: { total: 1248, trend: { value: 12.3, isPositive: true } },
     activeServices: { total: 142, trend: { value: 18.7, isPositive: true } },
+    monthlyRevenue: { total: 186750, trend: { value: 23.4, isPositive: true } },
     invoices: { pending: 8, overdue: 2, paid: 65 }
   },
   recentInvoices: [
@@ -78,35 +79,43 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Stats Grid - First Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatsCard
-          title="Total Clientes"
-          value={crmData.stats.clients.total}
-          icon={Users}
-          description="Clientes activos"
-          trend={crmData.stats.clients.trend}
+          title="Total Hoteles"
+          value={crmData.stats.hotels.total}
+          icon={Building2}
+          description="Hoteles registrados"
+          trend={crmData.stats.hotels.trend}
           variant="primary"
         />
         
         <StatsCard
-          title="Ingresos Mensuales"
-          value={`$${crmData.stats.monthlyRevenue.total.toLocaleString()}`}
-          icon={DollarSign}
-          description="Facturación recurrente"
-          trend={crmData.stats.monthlyRevenue.trend}
+          title="Total Habitaciones"
+          value={crmData.stats.rooms.total}
+          icon={Bed}
+          description="Habitaciones configuradas"
+          trend={crmData.stats.rooms.trend}
           variant="secondary"
         />
-      </div>
 
-      {/* Second Row Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatsCard
           title="Servicios Activos"
           value={crmData.stats.activeServices.total}
           icon={CheckCircle}
           description="Servicios contratados"
           trend={crmData.stats.activeServices.trend}
+        />
+      </div>
+
+      {/* Stats Grid - Second Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatsCard
+          title="Facturas Pagadas"
+          value={crmData.stats.invoices.paid}
+          icon={CheckCircle}
+          description="Este mes"
+          trend={{ value: 15.2, isPositive: true }}
         />
         
         <StatsCard
@@ -117,11 +126,12 @@ export const Dashboard = () => {
         />
         
         <StatsCard
-          title="Facturas Pagadas"
-          value={crmData.stats.invoices.paid}
-          icon={TrendingUp}
-          description="Este mes"
-          trend={{ value: 15.2, isPositive: true }}
+          title="Ingresos Mensuales"
+          value={`$${crmData.stats.monthlyRevenue.total.toLocaleString()}`}
+          icon={DollarSign}
+          description="Facturación recurrente"
+          trend={crmData.stats.monthlyRevenue.trend}
+          variant="primary"
         />
       </div>
 
