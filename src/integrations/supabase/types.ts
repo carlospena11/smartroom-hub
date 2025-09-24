@@ -1416,7 +1416,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_platform_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["tenant_role"]
+      }
+      get_user_tenant_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      user_has_hotel_access: {
+        Args: { hotel_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       analytics_source: "tv" | "webapp" | "totem" | "ads"
