@@ -11,6 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Trash2, Bed, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface TVPlatform {
+  id: string;
+  nombre: string;
+  usuario: string;
+  password: string;
+  fecha_caducidad: string;
+  estado: "activo" | "vencido" | "pendiente";
+}
+
 interface Room {
   id: string;
   codigo_habitacion: string;
@@ -18,6 +27,11 @@ interface Room {
   hotel_name: string;
   tipo: string;
   estado: "libre" | "ocupada" | "mantenimiento";
+  tv_relacionado?: {
+    marca: string;
+    modelo: string;
+    plataformas: TVPlatform[];
+  };
   overrides?: {
     widgets?: string[];
     configuracion?: Record<string, any>;
@@ -33,7 +47,29 @@ const Rooms = () => {
       hotel_id: "1",
       hotel_name: "Hotel Plaza Central",
       tipo: "standard",
-      estado: "libre"
+      estado: "libre",
+      tv_relacionado: {
+        marca: "Samsung",
+        modelo: "QN55Q70A",
+        plataformas: [
+          {
+            id: "1",
+            nombre: "Android TV",
+            usuario: "hotel_tv_101",
+            password: "tv2024*101",
+            fecha_caducidad: "2024-12-31",
+            estado: "activo"
+          },
+          {
+            id: "2", 
+            nombre: "Netflix",
+            usuario: "hotel.plaza@netflix.com",
+            password: "Netflix2024!",
+            fecha_caducidad: "2024-06-30",
+            estado: "vencido"
+          }
+        ]
+      }
     },
     {
       id: "2",
@@ -42,6 +78,28 @@ const Rooms = () => {
       hotel_name: "Hotel Plaza Central",
       tipo: "suite",
       estado: "ocupada",
+      tv_relacionado: {
+        marca: "LG",
+        modelo: "OLED55C1PSA",
+        plataformas: [
+          {
+            id: "3",
+            nombre: "webOS",
+            usuario: "suite_tv_102",
+            password: "suite2024*102",
+            fecha_caducidad: "2025-01-15",
+            estado: "activo"
+          },
+          {
+            id: "4",
+            nombre: "Prime Video",
+            usuario: "hotel.plaza@amazon.com",
+            password: "Prime2024@",
+            fecha_caducidad: "2024-08-30",
+            estado: "activo"
+          }
+        ]
+      },
       overrides: {
         widgets: ["welcome", "weather"],
         configuracion: { theme: "premium" }
@@ -410,6 +468,7 @@ const Rooms = () => {
                   <TableHead>Hotel</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead>TV y Plataformas</TableHead>
                   <TableHead>Personalización</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>

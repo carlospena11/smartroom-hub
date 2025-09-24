@@ -17,6 +17,13 @@ interface Totem {
   ubicacion: string;
   codigo: string;
   tipo: "totem";
+  url_gestion: string;
+  configuracion_web: {
+    titulo: string;
+    descripcion: string;
+    tema: string;
+    contenido_html?: string;
+  };
   layout: {
     template: string;
     configuracion: Record<string, any>;
@@ -38,6 +45,13 @@ const Totems = () => {
       ubicacion: "Lobby - Recepción",
       codigo: "TT-LOBBY-001",
       tipo: "totem",
+      url_gestion: "https://admin.smartroom.com/totem/lobby-001",
+      configuracion_web: {
+        titulo: "Bienvenido al Hotel Plaza Central",
+        descripcion: "Información y servicios del hotel",
+        tema: "modern_blue",
+        contenido_html: "<div><h2>Servicios disponibles</h2><ul><li>Recepción 24h</li><li>WiFi gratuito</li></ul></div>"
+      },
       layout: {
         template: "welcome_screen",
         configuracion: { theme: "modern", language: "es" }
@@ -55,6 +69,12 @@ const Totems = () => {
       ubicacion: "Restaurante Principal",
       codigo: "TT-REST-001",
       tipo: "totem",
+      url_gestion: "https://admin.smartroom.com/totem/rest-001",
+      configuracion_web: {
+        titulo: "Menú del Restaurante",
+        descripcion: "Especialidades y horarios",
+        tema: "elegant_gold"
+      },
       layout: {
         template: "menu_display",
         configuracion: { theme: "elegant", language: "es" }
@@ -72,6 +92,12 @@ const Totems = () => {
       ubicacion: "Área de Piscina",
       codigo: "TT-POOL-001",
       tipo: "totem",
+      url_gestion: "https://admin.smartroom.com/totem/pool-001",
+      configuracion_web: {
+        titulo: "Actividades de Piscina",
+        descripcion: "Seguridad y entretenimiento",
+        tema: "vibrant_green"
+      },
       layout: {
         template: "outdoor_display",
         configuracion: { theme: "bright", language: "es" }
@@ -90,6 +116,10 @@ const Totems = () => {
     nombre: "",
     ubicacion: "",
     codigo: "",
+    url_gestion: "",
+    titulo_web: "",
+    descripcion_web: "",
+    tema_web: "modern_blue",
     template: "welcome_screen",
     timezone: "America/Mexico_City"
   });
@@ -111,6 +141,12 @@ const Totems = () => {
       ubicacion: formData.ubicacion,
       codigo: formData.codigo,
       tipo: "totem",
+      url_gestion: formData.url_gestion,
+      configuracion_web: {
+        titulo: formData.titulo_web,
+        descripcion: formData.descripcion_web,
+        tema: formData.tema_web
+      },
       layout: {
         template: formData.template,
         configuracion: { theme: "modern", language: "es" }
@@ -128,6 +164,10 @@ const Totems = () => {
       nombre: "",
       ubicacion: "",
       codigo: "",
+      url_gestion: "",
+      titulo_web: "",
+      descripcion_web: "",
+      tema_web: "modern_blue",
       template: "welcome_screen",
       timezone: "America/Mexico_City"
     });
@@ -236,6 +276,43 @@ const Totems = () => {
                 </div>
                 
                 <div className="grid gap-2">
+                  <Label htmlFor="url_gestion">URL de Gestión</Label>
+                  <Input
+                    id="url_gestion"
+                    value={formData.url_gestion}
+                    onChange={(e) => setFormData({...formData, url_gestion: e.target.value})}
+                    placeholder="https://admin.smartroom.com/totem/..."
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Configuración Web</Label>
+                  <div className="grid gap-2">
+                    <Input
+                      placeholder="Título de la página"
+                      value={formData.titulo_web}
+                      onChange={(e) => setFormData({...formData, titulo_web: e.target.value})}
+                    />
+                    <Input
+                      placeholder="Descripción"
+                      value={formData.descripcion_web}
+                      onChange={(e) => setFormData({...formData, descripcion_web: e.target.value})}
+                    />
+                    <Select value={formData.tema_web} onValueChange={(value) => setFormData({...formData, tema_web: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="modern_blue">Moderno Azul</SelectItem>
+                        <SelectItem value="elegant_gold">Elegante Dorado</SelectItem>
+                        <SelectItem value="minimal_gray">Minimalista Gris</SelectItem>
+                        <SelectItem value="vibrant_green">Vibrante Verde</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid gap-2">
                   <Label htmlFor="timezone">Zona Horaria</Label>
                   <Select value={formData.timezone} onValueChange={(value) => setFormData({...formData, timezone: value})}>
                     <SelectTrigger>
@@ -329,9 +406,9 @@ const Totems = () => {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Ubicación</TableHead>
                   <TableHead>Código</TableHead>
-                  <TableHead>Plantilla</TableHead>
+                  <TableHead>Gestión Web</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Widgets</TableHead>
+                  <TableHead>Plantilla</TableHead>
                   <TableHead>Última Conexión</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -355,9 +432,14 @@ const Totems = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
-                          {totem.layout.template.replace('_', ' ')}
-                        </Badge>
+                        <div className="text-sm">
+                          <div className="font-medium">{totem.configuracion_web.titulo}</div>
+                          <div className="text-muted-foreground text-xs">
+                            <a href={totem.url_gestion} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              {totem.url_gestion}
+                            </a>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={statusConfig.variant} className={statusConfig.color}>
@@ -365,18 +447,9 @@ const Totems = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {totem.widgets.activos.slice(0, 2).map((widget, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {widget}
-                            </Badge>
-                          ))}
-                          {totem.widgets.activos.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{totem.widgets.activos.length - 2}
-                            </Badge>
-                          )}
-                        </div>
+                        <Badge variant="secondary">
+                          {totem.layout.template.replace('_', ' ')}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {totem.last_seen || "Nunca"}

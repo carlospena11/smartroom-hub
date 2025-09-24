@@ -9,8 +9,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash2, Smartphone, Download, Upload, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Smartphone, Download, Upload, Package, Eye } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+
+interface LayoutSkin {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  categoria: "hotel" | "restaurant" | "spa" | "business";
+  preview_url: string;
+  config_json: string;
+  creado_por: string;
+  fecha_creacion: string;
+  descargas: number;
+  rating: number;
+}
 
 interface AppRelease {
   id: string;
@@ -27,6 +41,70 @@ interface AppRelease {
 
 const NativeApps = () => {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("releases");
+  const [layoutSkins, setLayoutSkins] = useState<LayoutSkin[]>([
+    {
+      id: "1",
+      nombre: "Moderno Elegante",
+      descripcion: "Layout minimalista con colores suaves y tipografía moderna",
+      categoria: "hotel",
+      preview_url: "/previews/modern_elegant.jpg",
+      config_json: '{"theme": "modern", "colors": {"primary": "#1e40af", "secondary": "#f59e0b"}}',
+      creado_por: "SmartRoom Team",
+      fecha_creacion: "2024-03-15",
+      descargas: 145,
+      rating: 4.8
+    },
+    {
+      id: "2",
+      nombre: "Tropical Beach",
+      descripcion: "Tema tropical con colores vibrantes del océano",
+      categoria: "hotel",
+      preview_url: "/previews/tropical_beach.jpg",
+      config_json: '{"theme": "tropical", "colors": {"primary": "#059669", "secondary": "#06b6d4"}}',
+      creado_por: "Design Studio",
+      fecha_creacion: "2024-03-10",
+      descargas: 89,
+      rating: 4.6
+    },
+    {
+      id: "3",
+      nombre: "Corporativo Business",
+      descripcion: "Diseño profesional para hoteles de negocios",
+      categoria: "business",
+      preview_url: "/previews/corporate_business.jpg",
+      config_json: '{"theme": "corporate", "colors": {"primary": "#374151", "secondary": "#f59e0b"}}',
+      creado_por: "Corporate Designs",
+      fecha_creacion: "2024-03-08",
+      descargas: 67,
+      rating: 4.5
+    },
+    {
+      id: "4",
+      nombre: "Spa Wellness",
+      descripcion: "Layout relajante con tonos naturales",
+      categoria: "spa",
+      preview_url: "/previews/spa_wellness.jpg",
+      config_json: '{"theme": "spa", "colors": {"primary": "#10b981", "secondary": "#84cc16"}}',
+      creado_por: "Wellness Co.",
+      fecha_creacion: "2024-03-05",
+      descargas: 112,
+      rating: 4.9
+    },
+    {
+      id: "5",
+      nombre: "Restaurant Gourmet",
+      descripcion: "Tema elegante para restaurantes de alta cocina",
+      categoria: "restaurant",
+      preview_url: "/previews/restaurant_gourmet.jpg",
+      config_json: '{"theme": "gourmet", "colors": {"primary": "#dc2626", "secondary": "#f59e0b"}}',
+      creado_por: "Culinary Arts",
+      fecha_creacion: "2024-03-01",
+      descargas: 76,
+      rating: 4.7
+    }
+  ]);
+  
   const [appReleases, setAppReleases] = useState<AppRelease[]>([
     {
       id: "1",
@@ -173,13 +251,34 @@ const NativeApps = () => {
     });
   };
 
+  const handleDownloadSkin = (skinId: string) => {
+    setLayoutSkins(layoutSkins.map(skin => 
+      skin.id === skinId ? { ...skin, descargas: skin.descargas + 1 } : skin
+    ));
+    
+    toast({
+      title: "Descarga iniciada",
+      description: "El layout ha sido descargado exitosamente.",
+    });
+  };
+
+  const getCategoriaColor = (categoria: LayoutSkin["categoria"]) => {
+    const colors = {
+      hotel: "text-primary",
+      restaurant: "text-secondary",
+      spa: "text-tertiary",
+      business: "text-warning"
+    };
+    return colors[categoria];
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Aplicaciones Nativas</h1>
-            <p className="text-muted-foreground">Gestiona las versiones de las aplicaciones móviles y de dispositivos</p>
+            <p className="text-muted-foreground">Gestiona las versiones de las aplicaciones y librería de layouts</p>
           </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -302,106 +401,182 @@ const NativeApps = () => {
           })}
         </div>
 
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              Historial de Releases
-            </CardTitle>
-            <CardDescription>
-              Todas las versiones publicadas de las aplicaciones nativas
-            </CardDescription>
-          </CardHeader>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="releases">Historial de Releases</TabsTrigger>
+            <TabsTrigger value="layouts">Librería de Layouts</TabsTrigger>
+          </TabsList>
           
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Aplicación</TableHead>
-                  <TableHead>Hotel</TableHead>
-                  <TableHead>Versión</TableHead>
-                  <TableHead>Tamaño</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Descargas</TableHead>
-                  <TableHead>Notas</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {appReleases.map((release) => {
-                  const typeConfig = getAppTypeBadge(release.app_type);
-                  
-                  return (
-                    <TableRow key={release.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span>{typeConfig.icon}</span>
-                          <Badge variant={typeConfig.variant}>
-                            {typeConfig.label}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {release.hotel_slug.replace('-', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono font-medium">
-                        v{release.version}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatFileSize(release.size_bytes)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {release.published_at}
-                      </TableCell>
-                      <TableCell>
-                        {release.is_latest ? (
-                          <Badge variant="default">Actual</Badge>
-                        ) : (
-                          <Badge variant="secondary">Anterior</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {release.download_count} descargas
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate text-sm" title={release.notes}>
-                          {release.notes}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDownload(release)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDeleteRelease(release.id)}
-                            className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+          <TabsContent value="releases">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Historial de Releases
+                </CardTitle>
+                <CardDescription>
+                  Todas las versiones publicadas de las aplicaciones nativas
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Aplicación</TableHead>
+                      <TableHead>Hotel</TableHead>
+                      <TableHead>Versión</TableHead>
+                      <TableHead>Tamaño</TableHead>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Descargas</TableHead>
+                      <TableHead>Notas</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {appReleases.map((release) => {
+                      const typeConfig = getAppTypeBadge(release.app_type);
+                      
+                      return (
+                        <TableRow key={release.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span>{typeConfig.icon}</span>
+                              <Badge variant={typeConfig.variant}>
+                                {typeConfig.label}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {release.hotel_slug.replace('-', ' ')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-mono font-medium">
+                            v{release.version}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatFileSize(release.size_bytes)}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {release.published_at}
+                          </TableCell>
+                          <TableCell>
+                            {release.is_latest ? (
+                              <Badge variant="default">Actual</Badge>
+                            ) : (
+                              <Badge variant="secondary">Anterior</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {release.download_count} descargas
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-xs truncate text-sm" title={release.notes}>
+                              {release.notes}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleDownload(release)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleDeleteRelease(release.id)}
+                                className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="layouts">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Smartphone className="h-5 w-5 text-primary" />
+                  Librería de Layouts / Skins
+                </CardTitle>
+                <CardDescription>
+                  Layouts prediseñados listos para usar en las aplicaciones de TV
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {layoutSkins.map((skin) => (
+                    <Card key={skin.id} className="border hover:shadow-lg transition-shadow">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-lg">{skin.nombre}</CardTitle>
+                            <Badge variant="outline" className={getCategoriaColor(skin.categoria)}>
+                              {skin.categoria}
+                            </Badge>
+                          </div>
+                          <div className="text-right text-sm text-muted-foreground">
+                            ⭐ {skin.rating}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="aspect-video bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+                            <Smartphone className="h-8 w-8" />
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground">
+                            {skin.descripcion}
+                          </p>
+                          
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Por {skin.creado_por}</span>
+                            <span>{skin.descargas} descargas</span>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleDownloadSkin(skin.id)}
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Descargar
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
