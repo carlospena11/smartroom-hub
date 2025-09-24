@@ -17,16 +17,17 @@ import {
 // Mock CRM data
 const crmData = {
   stats: {
-    clients: { total: 12, trend: { value: 8.2, isPositive: true } },
-    monthlyRevenue: { total: 45850, trend: { value: 12.5, isPositive: true } },
-    activeServices: { total: 34, trend: { value: 5.3, isPositive: true } },
-    invoices: { pending: 3, overdue: 1, paid: 18 }
+    clients: { total: 47, trend: { value: 15.8, isPositive: true } },
+    monthlyRevenue: { total: 186750, trend: { value: 23.4, isPositive: true } },
+    activeServices: { total: 142, trend: { value: 18.7, isPositive: true } },
+    invoices: { pending: 8, overdue: 2, paid: 65 }
   },
   recentInvoices: [
-    { id: "INV-2024-001", client: "Hotel Plaza", amount: 5500, status: "paid", dueDate: "2024-01-15" },
-    { id: "INV-2024-002", client: "Hotel Boutique", amount: 3200, status: "pending", dueDate: "2024-01-20" },
-    { id: "INV-2024-003", client: "Centro Comercial", amount: 7800, status: "overdue", dueDate: "2024-01-10" },
-    { id: "INV-2024-004", client: "Resort Playa", amount: 4100, status: "paid", dueDate: "2024-01-18" },
+    { id: "INV-2024-067", client: "Hotel Plaza Premium", amount: 12500, status: "paid", dueDate: "2024-01-15" },
+    { id: "INV-2024-068", client: "Resort Costa Azul", amount: 18900, status: "pending", dueDate: "2024-01-25" },
+    { id: "INV-2024-069", client: "Centro Comercial Norte", amount: 7800, status: "overdue", dueDate: "2024-01-10" },
+    { id: "INV-2024-070", client: "Hotel Boutique Garden", amount: 15600, status: "paid", dueDate: "2024-01-18" },
+    { id: "INV-2024-071", client: "Complejo Turístico Sol", amount: 22400, status: "pending", dueDate: "2024-01-28" },
   ]
 };
 
