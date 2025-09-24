@@ -96,24 +96,6 @@ export const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-hero rounded-xl p-8 text-primary-foreground shadow-glow">
-        <h1 className="text-3xl font-bold mb-2">Resumen CRM</h1>
-        <p className="text-lg opacity-90">
-          Gestiona clientes, servicios y facturación desde un solo lugar
-        </p>
-        <div className="mt-4 flex gap-3">
-          <Button variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/20">
-            <Building2 className="h-4 w-4 mr-2" />
-            Nuevo Cliente
-          </Button>
-          <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
-            <FileText className="h-4 w-4 mr-2" />
-            Crear Factura
-          </Button>
-        </div>
-      </div>
-
       {/* Stats Grid - First Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatsCard
