@@ -125,12 +125,19 @@ const Rooms = () => {
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isTVDialogOpen, setIsTVDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [managingTVRoom, setManagingTVRoom] = useState<Room | null>(null);
   const [formData, setFormData] = useState({
     codigo_habitacion: "",
     hotel_id: "1",
     tipo: "standard",
     estado: "libre" as Room["estado"]
+  });
+  const [tvFormData, setTvFormData] = useState({
+    marca: "",
+    modelo: "",
+    plataformas: [] as TVPlatform[]
   });
 
   const getStatusBadge = (estado: Room["estado"]) => {
@@ -234,6 +241,69 @@ const Rooms = () => {
     toast({
       title: "Estado actualizado",
       description: "El estado de la habitación ha sido actualizado.",
+    });
+  };
+
+  const handleManageTV = (room: Room) => {
+    setManagingTVRoom(room);
+    setTvFormData({
+      marca: room.tv_relacionado?.marca || "",
+      modelo: room.tv_relacionado?.modelo || "",
+      plataformas: room.tv_relacionado?.plataformas || []
+    });
+    setIsTVDialogOpen(true);
+  };
+
+  const handleSaveTV = () => {
+    if (!managingTVRoom) return;
+
+    const updatedRoom: Room = {
+      ...managingTVRoom,
+      tv_relacionado: {
+        marca: tvFormData.marca,
+        modelo: tvFormData.modelo,
+        plataformas: tvFormData.plataformas
+      }
+    };
+
+    setRooms(rooms.map(r => r.id === managingTVRoom.id ? updatedRoom : r));
+    setIsTVDialogOpen(false);
+    setManagingTVRoom(null);
+    
+    toast({
+      title: "TV actualizado",
+      description: "La información del TV ha sido actualizada exitosamente.",
+    });
+  };
+
+  const handleAddPlatform = () => {
+    const newPlatform: TVPlatform = {
+      id: Date.now().toString(),
+      nombre: "",
+      usuario: "",
+      password: "",
+      fecha_caducidad: "",
+      estado: "pendiente"
+    };
+    setTvFormData({
+      ...tvFormData,
+      plataformas: [...tvFormData.plataformas, newPlatform]
+    });
+  };
+
+  const handleRemovePlatform = (platformId: string) => {
+    setTvFormData({
+      ...tvFormData,
+      plataformas: tvFormData.plataformas.filter(p => p.id !== platformId)
+    });
+  };
+
+  const handleUpdatePlatform = (platformId: string, field: keyof TVPlatform, value: string) => {
+    setTvFormData({
+      ...tvFormData,
+      plataformas: tvFormData.plataformas.map(p => 
+        p.id === platformId ? { ...p, [field]: value } : p
+      )
     });
   };
 
@@ -399,6 +469,168 @@ const Rooms = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* TV Management Dialog */}
+          <Dialog open={isTVDialogOpen} onOpenChange={setIsTVDialogOpen}>
+            <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Gestionar TV - Habitación {managingTVRoom?.codigo_habitacion}</DialogTitle>
+                <DialogDescription>
+                  Configura el TV y las plataformas digitales de la habitación
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-6 py-4">
+                {/* TV Information */}
+                <div className="grid gap-4">
+                  <h4 className="text-sm font-medium">Información del TV</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="tv-marca">Marca</Label>
+                      <Input
+                        id="tv-marca"
+                        value={tvFormData.marca}
+                        onChange={(e) => setTvFormData({...tvFormData, marca: e.target.value})}
+                        placeholder="Samsung, LG, Sony..."
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="tv-modelo">Modelo</Label>
+                      <Input
+                        id="tv-modelo"
+                        value={tvFormData.modelo}
+                        onChange={(e) => setTvFormData({...tvFormData, modelo: e.target.value})}
+                        placeholder="QN55Q70A, OLED55C1PSA..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Platform Management */}
+                <div className="grid gap-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">Plataformas Digitales</h4>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddPlatform}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Plataforma
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {tvFormData.plataformas.map((plataforma, index) => (
+                      <Card key={plataforma.id} className="p-4">
+                        <div className="grid gap-4">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-sm font-medium">Plataforma #{index + 1}</h5>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRemovePlatform(plataforma.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                              <Label>Nombre de la Plataforma</Label>
+                              <Select 
+                                value={plataforma.nombre} 
+                                onValueChange={(value) => handleUpdatePlatform(plataforma.id, "nombre", value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccionar plataforma" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Android TV">Android TV</SelectItem>
+                                  <SelectItem value="webOS">webOS (LG)</SelectItem>
+                                  <SelectItem value="Tizen">Tizen (Samsung)</SelectItem>
+                                  <SelectItem value="Netflix">Netflix</SelectItem>
+                                  <SelectItem value="Prime Video">Prime Video</SelectItem>
+                                  <SelectItem value="YouTube TV">YouTube TV</SelectItem>
+                                  <SelectItem value="Roku TV">Roku TV</SelectItem>
+                                  <SelectItem value="Apple TV">Apple TV</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="grid gap-2">
+                              <Label>Estado</Label>
+                              <Select 
+                                value={plataforma.estado} 
+                                onValueChange={(value) => handleUpdatePlatform(plataforma.id, "estado", value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="activo">Activo</SelectItem>
+                                  <SelectItem value="vencido">Vencido</SelectItem>
+                                  <SelectItem value="pendiente">Pendiente</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="grid gap-2">
+                              <Label>Usuario/Email</Label>
+                              <Input
+                                value={plataforma.usuario}
+                                onChange={(e) => handleUpdatePlatform(plataforma.id, "usuario", e.target.value)}
+                                placeholder="usuario@email.com"
+                              />
+                            </div>
+                            
+                            <div className="grid gap-2">
+                              <Label>Contraseña</Label>
+                              <Input
+                                type="password"
+                                value={plataforma.password}
+                                onChange={(e) => handleUpdatePlatform(plataforma.id, "password", e.target.value)}
+                                placeholder="••••••••"
+                              />
+                            </div>
+                            
+                            <div className="grid gap-2">
+                              <Label>Fecha de Caducidad</Label>
+                              <Input
+                                type="date"
+                                value={plataforma.fecha_caducidad}
+                                onChange={(e) => handleUpdatePlatform(plataforma.id, "fecha_caducidad", e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                    
+                    {tvFormData.plataformas.length === 0 && (
+                      <div className="text-center text-muted-foreground py-8">
+                        No hay plataformas configuradas. Haz clic en "Agregar Plataforma" para comenzar.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsTVDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveTV} className="bg-gradient-primary">
+                  Guardar TV y Plataformas
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
@@ -507,6 +739,33 @@ const Rooms = () => {
                         </Select>
                       </TableCell>
                       <TableCell>
+                        {room.tv_relacionado ? (
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium">
+                              {room.tv_relacionado.marca} {room.tv_relacionado.modelo}
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {room.tv_relacionado.plataformas.map((plataforma) => (
+                                <Badge 
+                                  key={plataforma.id}
+                                  variant={plataforma.estado === "activo" ? "default" : plataforma.estado === "vencido" ? "destructive" : "secondary"}
+                                  className="text-xs"
+                                >
+                                  {plataforma.nombre}
+                                </Badge>
+                              ))}
+                            </div>
+                            {room.tv_relacionado.plataformas.some(p => p.estado === "vencido") && (
+                              <div className="text-xs text-destructive">
+                                ⚠️ Algunas plataformas vencidas
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Sin TV configurado</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {room.overrides ? (
                           <Badge variant="outline" className="text-primary">
                             Personalizada
@@ -519,13 +778,21 @@ const Rooms = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditRoom(room)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleManageTV(room)}
+                            className="text-primary"
+                          >
+                            📺 TV
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditRoom(room)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                           <Button 
                             variant="outline" 
                             size="sm"
