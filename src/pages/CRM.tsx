@@ -25,6 +25,7 @@ interface Service {
   precio_unitario: number;
   cantidad_habitaciones: number;
   cantidad_tv: number;
+  cantidad_plataformas_digitales: number;
   precio_total: number;
   tipo: "software" | "hardware" | "soporte" | "consultoria";
   status: "activo" | "suspendido" | "cancelado";
@@ -75,7 +76,8 @@ const CRM = () => {
       precio_unitario: 50,
       cantidad_habitaciones: 45,
       cantidad_tv: 50,
-      precio_total: 4750,
+      cantidad_plataformas_digitales: 15,
+      precio_total: 5500,
       tipo: "software",
       status: "activo",
       fecha_inicio: "2024-01-01",
@@ -94,7 +96,8 @@ const CRM = () => {
       precio_unitario: 75,
       cantidad_habitaciones: 60,
       cantidad_tv: 65,
-      precio_total: 9375,
+      cantidad_plataformas_digitales: 25,
+      precio_total: 11250,
       tipo: "software",
       status: "activo",
       fecha_inicio: "2024-02-01",
@@ -110,7 +113,7 @@ const CRM = () => {
       hotel_name: "Hotel Plaza Central",
       numero_factura: "INV-2024-001",
       servicios: ["SmartRoom Basic"],
-      monto_total: 4750,
+      monto_total: 5500,
       fecha_emision: "2024-03-01",
       fecha_vencimiento: "2024-03-31",
       status: "pagada",
@@ -123,7 +126,7 @@ const CRM = () => {
       hotel_name: "Resort Marina Bay",
       numero_factura: "INV-2024-002",
       servicios: ["SmartRoom Premium + Soporte"],
-      monto_total: 9375,
+      monto_total: 11250,
       fecha_emision: "2024-03-01",
       fecha_vencimiento: "2024-03-31",
       status: "pendiente"
@@ -136,7 +139,7 @@ const CRM = () => {
       invoice_id: "1",
       hotel_name: "Hotel Plaza Central",
       numero_factura: "INV-2024-001",
-      monto: 4750,
+      monto: 5500,
       fecha_pago: "2024-03-15",
       metodo_pago: "transferencia",
       referencia: "TXN-240315-001",
@@ -161,6 +164,7 @@ const CRM = () => {
     precio_unitario: "",
     cantidad_habitaciones: "",
     cantidad_tv: "",
+    cantidad_plataformas_digitales: "",
     fecha_caducidad: "",
     tipo: "software" as Service["tipo"]
   });
@@ -209,6 +213,7 @@ const CRM = () => {
       precio_unitario: service.precio_unitario.toString(),
       cantidad_habitaciones: service.cantidad_habitaciones.toString(),
       cantidad_tv: service.cantidad_tv.toString(),
+      cantidad_plataformas_digitales: service.cantidad_plataformas_digitales.toString(),
       fecha_caducidad: service.fecha_caducidad,
       tipo: service.tipo
     });
@@ -221,7 +226,8 @@ const CRM = () => {
     const precioUnitario = parseFloat(serviceFormData.precio_unitario);
     const cantidadHabitaciones = parseInt(serviceFormData.cantidad_habitaciones);
     const cantidadTv = parseInt(serviceFormData.cantidad_tv);
-    const precioTotal = precioUnitario * (cantidadHabitaciones + cantidadTv);
+    const cantidadPlataformas = parseInt(serviceFormData.cantidad_plataformas_digitales);
+    const precioTotal = precioUnitario * (cantidadHabitaciones + cantidadTv + cantidadPlataformas);
 
     const updatedService: Service = {
       ...editingService,
@@ -233,6 +239,7 @@ const CRM = () => {
       precio_unitario: precioUnitario,
       cantidad_habitaciones: cantidadHabitaciones,
       cantidad_tv: cantidadTv,
+      cantidad_plataformas_digitales: cantidadPlataformas,
       precio_total: precioTotal,
       fecha_caducidad: serviceFormData.fecha_caducidad,
       tipo: serviceFormData.tipo
@@ -251,6 +258,7 @@ const CRM = () => {
       precio_unitario: "",
       cantidad_habitaciones: "",
       cantidad_tv: "",
+      cantidad_plataformas_digitales: "",
       fecha_caducidad: "",
       tipo: "software"
     });
@@ -274,7 +282,8 @@ const CRM = () => {
     const precioUnitario = parseFloat(serviceFormData.precio_unitario);
     const cantidadHabitaciones = parseInt(serviceFormData.cantidad_habitaciones);
     const cantidadTv = parseInt(serviceFormData.cantidad_tv);
-    const precioTotal = precioUnitario * (cantidadHabitaciones + cantidadTv);
+    const cantidadPlataformas = parseInt(serviceFormData.cantidad_plataformas_digitales);
+    const precioTotal = precioUnitario * (cantidadHabitaciones + cantidadTv + cantidadPlataformas);
 
     const newService: Service = {
       id: Date.now().toString(),
@@ -288,6 +297,7 @@ const CRM = () => {
       precio_unitario: precioUnitario,
       cantidad_habitaciones: cantidadHabitaciones,
       cantidad_tv: cantidadTv,
+      cantidad_plataformas_digitales: cantidadPlataformas,
       precio_total: precioTotal,
       tipo: serviceFormData.tipo,
       status: "activo",
@@ -307,6 +317,7 @@ const CRM = () => {
       precio_unitario: "",
       cantidad_habitaciones: "",
       cantidad_tv: "",
+      cantidad_plataformas_digitales: "",
       fecha_caducidad: "",
       tipo: "software"
     });
@@ -593,7 +604,7 @@ const CRM = () => {
                             />
                           </div>
                           <div className="grid gap-2">
-                            <Label htmlFor="service-tvs">Cantidad TV/Dispositivos</Label>
+                            <Label htmlFor="service-tvs">Cantidad TV</Label>
                             <Input
                               id="service-tvs"
                               type="number"
@@ -602,6 +613,17 @@ const CRM = () => {
                               placeholder="50"
                             />
                           </div>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor="service-platforms">Plataformas Digitales</Label>
+                          <Input
+                            id="service-platforms"
+                            type="number"
+                            value={serviceFormData.cantidad_plataformas_digitales}
+                            onChange={(e) => setServiceFormData({...serviceFormData, cantidad_plataformas_digitales: e.target.value})}
+                            placeholder="15"
+                          />
                         </div>
 
                         <div className="grid gap-2">
@@ -624,7 +646,8 @@ const CRM = () => {
                           <div className="p-3 bg-muted rounded-md font-medium">
                             ${((parseFloat(serviceFormData.precio_unitario) || 0) * 
                                ((parseInt(serviceFormData.cantidad_habitaciones) || 0) + 
-                                (parseInt(serviceFormData.cantidad_tv) || 0))).toLocaleString()}
+                                (parseInt(serviceFormData.cantidad_tv) || 0) +
+                                (parseInt(serviceFormData.cantidad_plataformas_digitales) || 0))).toLocaleString()}
                           </div>
                         </div>
                       </div>
@@ -748,7 +771,7 @@ const CRM = () => {
                             />
                           </div>
                           <div className="grid gap-2">
-                            <Label htmlFor="edit-service-tvs">Cantidad TV/Dispositivos</Label>
+                            <Label htmlFor="edit-service-tvs">Cantidad TV</Label>
                             <Input
                               id="edit-service-tvs"
                               type="number"
@@ -757,6 +780,17 @@ const CRM = () => {
                               placeholder="50"
                             />
                           </div>
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor="edit-service-platforms">Plataformas Digitales</Label>
+                          <Input
+                            id="edit-service-platforms"
+                            type="number"
+                            value={serviceFormData.cantidad_plataformas_digitales}
+                            onChange={(e) => setServiceFormData({...serviceFormData, cantidad_plataformas_digitales: e.target.value})}
+                            placeholder="15"
+                          />
                         </div>
 
                         <div className="grid gap-2">
@@ -779,7 +813,8 @@ const CRM = () => {
                           <div className="p-3 bg-muted rounded-md font-medium">
                             ${((parseFloat(serviceFormData.precio_unitario) || 0) * 
                                ((parseInt(serviceFormData.cantidad_habitaciones) || 0) + 
-                                (parseInt(serviceFormData.cantidad_tv) || 0))).toLocaleString()}
+                                (parseInt(serviceFormData.cantidad_tv) || 0) +
+                                (parseInt(serviceFormData.cantidad_plataformas_digitales) || 0))).toLocaleString()}
                           </div>
                         </div>
                       </div>
@@ -804,7 +839,7 @@ const CRM = () => {
                       <TableHead>Hotel</TableHead>
                       <TableHead>Servicio</TableHead>
                       <TableHead>Responsable/Tel</TableHead>
-                      <TableHead>Habitaciones/TV</TableHead>
+                      <TableHead>Habitaciones/TV/Plataformas</TableHead>
                       <TableHead>Precio Total</TableHead>
                       <TableHead>Caducidad</TableHead>
                       <TableHead>Estado</TableHead>
@@ -843,7 +878,8 @@ const CRM = () => {
                           <TableCell>
                             <div>
                               <div>{service.cantidad_habitaciones} habitaciones</div>
-                              <div className="text-sm text-muted-foreground">{service.cantidad_tv} TV/dispositivos</div>
+                              <div className="text-sm text-muted-foreground">{service.cantidad_tv} TV</div>
+                              <div className="text-sm text-muted-foreground">{service.cantidad_plataformas_digitales} plataformas digitales</div>
                             </div>
                           </TableCell>
                           <TableCell>
