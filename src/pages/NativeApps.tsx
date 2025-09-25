@@ -6,15 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Smartphone, Monitor, Edit, Upload, Download, Eye, Palette, Image as ImageIcon, Type, Settings, Play, ExternalLink } from "lucide-react";
+import { Globe, Upload, Download, Eye, Palette, Image as ImageIcon, Type, ExternalLink, Plus, Edit3, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface AppElement {
+interface ProjectElement {
   id: string;
-  type: 'text' | 'image' | 'background' | 'logo';
+  type: 'text' | 'image' | 'logo';
   content: string;
+  originalContent?: string;
+  selector?: string;
   position: { x: number; y: number };
   styles: {
     fontSize?: string;
@@ -25,79 +27,137 @@ interface AppElement {
   };
 }
 
-interface AppProject {
+interface WebProject {
   id: string;
   name: string;
+  url: string;
   description: string;
-  template: string;
-  elements: AppElement[];
+  elements: ProjectElement[];
   backgroundImage?: string;
-  logoImage?: string;
-  primaryColor: string;
-  secondaryColor: string;
+  isLoaded: boolean;
 }
 
 const NativeApps = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeProject, setActiveProject] = useState<AppProject>({
-    id: "1",
-    name: "SmartRoom Hotel TV",
-    description: "Aplicación para pantallas de hotel con información y servicios",
-    template: "hotel-tv",
-    primaryColor: "#1e40af",
-    secondaryColor: "#f59e0b",
-    backgroundImage: "/hero-smartroom.jpg",
-    elements: [
-      {
-        id: "1",
-        type: "text",
-        content: "Bienvenido al Hotel",
-        position: { x: 50, y: 20 },
-        styles: { fontSize: "2rem", color: "#1e40af", fontWeight: "bold" }
-      },
-      {
-        id: "2", 
-        type: "text",
-        content: "Disfruta de tu estancia",
-        position: { x: 50, y: 35 },
-        styles: { fontSize: "1.2rem", color: "#666" }
-      },
-      {
-        id: "3",
-        type: "text",
-        content: "Servicios disponibles 24/7",
-        position: { x: 50, y: 60 },
-        styles: { fontSize: "1rem", color: "#333" }
-      },
-      {
-        id: "4",
-        type: "logo",
-        content: "/placeholder.svg",
-        position: { x: 10, y: 10 },
-        styles: { width: "120px", height: "60px" }
-      }
-    ]
-  });
-
-  const [selectedElement, setSelectedElement] = useState<AppElement | null>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  
+  const [projects, setProjects] = useState<WebProject[]>([
+    {
+      id: "1",
+      name: "Proyecto Demo",
+      url: "https://lovable.dev/projects/f9c6dd0a-7e63-49b9-b0dc-cda403509b86",
+      description: "Proyecto base para edición",
+      isLoaded: true,
+      elements: [
+        {
+          id: "1",
+          type: "text",
+          content: "Bienvenido a SmartRoom",
+          originalContent: "Bienvenido a SmartRoom",
+          position: { x: 50, y: 20 },
+          styles: { fontSize: "2rem", color: "#1e40af", fontWeight: "bold" }
+        },
+        {
+          id: "2", 
+          type: "text",
+          content: "Gestión inteligente para hoteles",
+          originalContent: "Gestión inteligente para hoteles",
+          position: { x: 50, y: 35 },
+          styles: { fontSize: "1.2rem", color: "#666" }
+        },
+        {
+          id: "3",
+          type: "logo",
+          content: "/placeholder.svg",
+          originalContent: "/placeholder.svg",
+          position: { x: 10, y: 10 },
+          styles: { width: "120px", height: "60px" }
+        }
+      ]
+    }
+  ]);
+  
+  const [activeProject, setActiveProject] = useState<WebProject | null>(projects[0]);
+  const [selectedElement, setSelectedElement] = useState<ProjectElement | null>(null);
   const [isEditingElement, setIsEditingElement] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'mobile' | 'tv'>('mobile');
-  const [showExternalProject, setShowExternalProject] = useState(false);
   const [uploadType, setUploadType] = useState<'background' | 'logo' | 'element'>('element');
+  const [isLoadingProject, setIsLoadingProject] = useState(false);
+  const [showAddProject, setShowAddProject] = useState(false);
+  const [newProjectUrl, setNewProjectUrl] = useState("");
+  const [newProjectName, setNewProjectName] = useState("");
 
-  const handleElementClick = (element: AppElement) => {
+  const handleLoadProject = async () => {
+    if (!newProjectUrl || !newProjectName) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa una URL y nombre válidos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoadingProject(true);
+    
+    // Simular carga del proyecto
+    setTimeout(() => {
+      const newProject: WebProject = {
+        id: Date.now().toString(),
+        name: newProjectName,
+        url: newProjectUrl,
+        description: "Proyecto cargado desde URL",
+        isLoaded: true,
+        elements: [
+          {
+            id: Date.now().toString(),
+            type: "text",
+            content: "Título principal",
+            originalContent: "Título principal",
+            position: { x: 50, y: 25 },
+            styles: { fontSize: "2rem", color: "#333", fontWeight: "bold" }
+          },
+          {
+            id: (Date.now() + 1).toString(),
+            type: "text",
+            content: "Subtítulo",
+            originalContent: "Subtítulo",
+            position: { x: 50, y: 40 },
+            styles: { fontSize: "1.2rem", color: "#666" }
+          }
+        ]
+      };
+      
+      setProjects(prev => [...prev, newProject]);
+      setActiveProject(newProject);
+      setShowAddProject(false);
+      setNewProjectUrl("");
+      setNewProjectName("");
+      setIsLoadingProject(false);
+      
+      toast({
+        title: "Proyecto cargado",
+        description: `${newProjectName} se ha cargado exitosamente.`
+      });
+    }, 2000);
+  };
+
+  const handleElementClick = (element: ProjectElement) => {
     setSelectedElement(element);
     setIsEditingElement(true);
   };
 
-  const handleUpdateElement = (updatedElement: AppElement) => {
-    setActiveProject(prev => ({
-      ...prev,
-      elements: prev.elements.map(el => 
+  const handleUpdateElement = (updatedElement: ProjectElement) => {
+    if (!activeProject) return;
+    
+    const updatedProject = {
+      ...activeProject,
+      elements: activeProject.elements.map(el => 
         el.id === updatedElement.id ? updatedElement : el
       )
-    }));
+    };
+    
+    setActiveProject(updatedProject);
+    setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
     
     toast({
       title: "Elemento actualizado",
@@ -112,18 +172,19 @@ const NativeApps = () => {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (file && activeProject) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageUrl = e.target?.result as string;
         
         if (uploadType === 'background') {
-          setActiveProject(prev => ({
-            ...prev,
+          const updatedProject = {
+            ...activeProject,
             backgroundImage: imageUrl
-          }));
+          };
+          setActiveProject(updatedProject);
+          setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
         } else if (uploadType === 'logo') {
-          // Actualizar o crear elemento de logo
           const logoElement = activeProject.elements.find(el => el.type === 'logo');
           if (logoElement) {
             handleUpdateElement({
@@ -131,17 +192,19 @@ const NativeApps = () => {
               content: imageUrl
             });
           } else {
-            const newLogoElement: AppElement = {
+            const newLogoElement: ProjectElement = {
               id: Date.now().toString(),
               type: 'logo',
               content: imageUrl,
               position: { x: 10, y: 10 },
               styles: { width: "120px", height: "60px" }
             };
-            setActiveProject(prev => ({
-              ...prev,
-              elements: [...prev.elements, newLogoElement]
-            }));
+            const updatedProject = {
+              ...activeProject,
+              elements: [...activeProject.elements, newLogoElement]
+            };
+            setActiveProject(updatedProject);
+            setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
           }
         } else if (selectedElement && selectedElement.type === 'image') {
           handleUpdateElement({
@@ -149,8 +212,7 @@ const NativeApps = () => {
             content: imageUrl
           });
         } else {
-          // Crear nuevo elemento de imagen
-          const newElement: AppElement = {
+          const newElement: ProjectElement = {
             id: Date.now().toString(),
             type: 'image',
             content: imageUrl,
@@ -158,10 +220,12 @@ const NativeApps = () => {
             styles: { width: "200px", height: "150px" }
           };
           
-          setActiveProject(prev => ({
-            ...prev,
-            elements: [...prev.elements, newElement]
-          }));
+          const updatedProject = {
+            ...activeProject,
+            elements: [...activeProject.elements, newElement]
+          };
+          setActiveProject(updatedProject);
+          setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
         }
         
         toast({
@@ -173,15 +237,16 @@ const NativeApps = () => {
     }
   };
 
-  const openExternalProject = () => {
-    window.open('https://lovable.dev/projects/f9c6dd0a-7e63-49b9-b0dc-cda403509b86', '_blank');
-  };
-
   const deleteElement = (elementId: string) => {
-    setActiveProject(prev => ({
-      ...prev,
-      elements: prev.elements.filter(el => el.id !== elementId)
-    }));
+    if (!activeProject) return;
+    
+    const updatedProject = {
+      ...activeProject,
+      elements: activeProject.elements.filter(el => el.id !== elementId)
+    };
+    
+    setActiveProject(updatedProject);
+    setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
     
     if (selectedElement?.id === elementId) {
       setSelectedElement(null);
@@ -193,7 +258,27 @@ const NativeApps = () => {
     });
   };
 
-  const renderPreviewElement = (element: AppElement) => {
+  const addTextElement = () => {
+    if (!activeProject) return;
+    
+    const newElement: ProjectElement = {
+      id: Date.now().toString(),
+      type: 'text',
+      content: 'Nuevo texto',
+      position: { x: 50, y: 50 },
+      styles: { fontSize: '1rem', color: '#333' }
+    };
+    
+    const updatedProject = {
+      ...activeProject,
+      elements: [...activeProject.elements, newElement]
+    };
+    
+    setActiveProject(updatedProject);
+    setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
+  };
+
+  const renderPreviewElement = (element: ProjectElement) => {
     const style = {
       position: 'absolute' as const,
       left: `${element.position.x}%`,
@@ -229,8 +314,6 @@ const NativeApps = () => {
             className="hover:opacity-80 transition-opacity object-contain"
           />
         );
-      case 'background':
-        return null; // Background is handled separately
       default:
         return null;
     }
@@ -241,302 +324,320 @@ const NativeApps = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Apps Nativas</h1>
-            <p className="text-muted-foreground">Editor visual para aplicaciones móviles y TV</p>
+            <h1 className="text-3xl font-bold text-foreground">Proyectos</h1>
+            <p className="text-muted-foreground">Editor visual para páginas web - Solo imágenes y textos</p>
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" onClick={openExternalProject}>
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Ver Proyecto Original
+            <Button variant="outline" onClick={() => setShowAddProject(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Cargar Proyecto
             </Button>
-            <Button variant="outline" onClick={() => setPreviewMode(previewMode === 'mobile' ? 'tv' : 'mobile')}>
-              {previewMode === 'mobile' ? <Monitor className="h-4 w-4 mr-2" /> : <Smartphone className="h-4 w-4 mr-2" />}
-              Vista {previewMode === 'mobile' ? 'TV' : 'Móvil'}
-            </Button>
-            <Button className="bg-gradient-primary">
-              <Download className="h-4 w-4 mr-2" />
-              Exportar App
-            </Button>
+            {activeProject && (
+              <Button className="bg-gradient-primary">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Cambios
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Información del proyecto externo */}
-        <Card className="border-primary/20 bg-primary/5">
+        {/* Lista de Proyectos */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-primary" />
-              Proyecto Base
+              <Globe className="h-5 w-5" />
+              Proyectos Cargados
             </CardTitle>
-            <CardDescription>
-              Configuración basada en: https://lovable.dev/projects/f9c6dd0a-7e63-49b9-b0dc-cda403509b86
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Este editor permite personalizar la aplicación nativa manteniendo la funcionalidad del proyecto original.
-                </p>
-              </div>
-              <Button variant="outline" onClick={openExternalProject}>
-                <Eye className="h-4 w-4 mr-2" />
-                <ExternalLink className="h-4 w-4 ml-1" />
-                Abrir Proyecto
-              </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects.map((project) => (
+                <div
+                  key={project.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                    activeProject?.id === project.id ? 'border-primary bg-primary/5' : ''
+                  }`}
+                  onClick={() => setActiveProject(project)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">{project.name}</h3>
+                    <Badge variant={project.isLoaded ? "default" : "secondary"}>
+                      {project.isLoaded ? "Cargado" : "Pendiente"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-3 w-3" />
+                    <span className="text-xs text-muted-foreground truncate">{project.url}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Panel de Herramientas */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Herramientas de Edición
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Tabs defaultValue="elements" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="elements">Elementos</TabsTrigger>
-                  <TabsTrigger value="styles">Estilos</TabsTrigger>
-                  <TabsTrigger value="media">Media</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="elements" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Agregar Elementos</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          const newElement: AppElement = {
-                            id: Date.now().toString(),
-                            type: 'text',
-                            content: 'Nuevo texto',
-                            position: { x: 50, y: 50 },
-                            styles: { fontSize: '1rem', color: '#333' }
-                          };
-                          setActiveProject(prev => ({
-                            ...prev,
-                            elements: [...prev.elements, newElement]
-                          }));
-                        }}
-                      >
-                        <Type className="h-4 w-4 mr-1" />
-                        Texto
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleImageUpload('element')}
-                      >
-                        <ImageIcon className="h-4 w-4 mr-1" />
-                        Imagen
-                      </Button>
-                    </div>
-                  </div>
+        {activeProject && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Panel de Herramientas */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Editor de Elementos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Tabs defaultValue="elements" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="elements">Elementos</TabsTrigger>
+                    <TabsTrigger value="media">Media</TabsTrigger>
+                  </TabsList>
                   
-                  <div className="space-y-2">
-                    <Label>Elementos en Pantalla</Label>
-                    <div className="max-h-48 overflow-y-auto space-y-2">
-                      {activeProject.elements.map((element) => (
-                        <div
-                          key={element.id}
-                          className={`p-2 border rounded cursor-pointer hover:bg-muted/50 ${
-                            selectedElement?.id === element.id ? 'border-primary bg-primary/5' : ''
-                          }`}
-                          onClick={() => setSelectedElement(element)}
+                  <TabsContent value="elements" className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Agregar Elementos</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={addTextElement}
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">
-                              {element.type === 'text' ? element.content.substring(0, 15) + (element.content.length > 15 ? '...' : '') : 
-                               element.type === 'image' ? 'Imagen' : 
-                               element.type === 'logo' ? 'Logo' : element.type}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Badge variant="outline" className="text-xs">
-                                {element.type}
-                              </Badge>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteElement(element.id);
-                                }}
-                                className="h-6 w-6 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                              >
-                                ×
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="styles" className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="grid gap-2">
-                      <Label>Color Primario</Label>
-                      <Input
-                        type="color"
-                        value={activeProject.primaryColor}
-                        onChange={(e) => setActiveProject(prev => ({
-                          ...prev,
-                          primaryColor: e.target.value
-                        }))}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Color Secundario</Label>
-                      <Input
-                        type="color"
-                        value={activeProject.secondaryColor}
-                        onChange={(e) => setActiveProject(prev => ({
-                          ...prev,
-                          secondaryColor: e.target.value
-                        }))}
-                      />
+                          <Type className="h-4 w-4 mr-1" />
+                          Texto
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleImageUpload('element')}
+                        >
+                          <ImageIcon className="h-4 w-4 mr-1" />
+                          Imagen
+                        </Button>
+                      </div>
                     </div>
                     
-                    {selectedElement && (
-                      <div className="pt-4 border-t">
-                        <Label className="text-sm font-medium">Elemento Seleccionado</Label>
-                        <div className="mt-2 space-y-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => setIsEditingElement(true)}
+                    <div className="space-y-2">
+                      <Label>Elementos ({activeProject.elements.length})</Label>
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {activeProject.elements.map((element) => (
+                          <div
+                            key={element.id}
+                            className={`p-2 border rounded cursor-pointer hover:bg-muted/50 ${
+                              selectedElement?.id === element.id ? 'border-primary bg-primary/5' : ''
+                            }`}
+                            onClick={() => setSelectedElement(element)}
                           >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar Propiedades
-                          </Button>
-                        </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">
+                                {element.type === 'text' ? element.content.substring(0, 15) + (element.content.length > 15 ? '...' : '') : 
+                                 element.type === 'image' ? 'Imagen' : 
+                                 element.type === 'logo' ? 'Logo' : element.type}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleElementClick(element);
+                                  }}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Edit3 className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteElement(element.id);
+                                  }}
+                                  className="h-6 w-6 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="media" className="space-y-4">
-                  <div className="space-y-4">
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => handleImageUpload('background')}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Cambiar Fondo
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => handleImageUpload('logo')}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Cambiar Logo
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="media" className="space-y-4">
+                    <div className="space-y-4">
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleImageUpload('background')}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Cambiar Fondo
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleImageUpload('logo')}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Cambiar Logo
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
 
-          {/* Vista Previa */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  Vista Previa - {previewMode === 'mobile' ? 'Móvil' : 'TV'}
-                </CardTitle>
-                <Badge variant="outline">
-                  {activeProject.name}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div 
-                className={`relative border-2 border-dashed border-gray-300 overflow-hidden ${
-                  previewMode === 'mobile' 
-                    ? 'aspect-[9/16] max-w-sm mx-auto' 
-                    : 'aspect-[16/9] w-full'
-                }`}
-                style={{
-                  backgroundImage: activeProject.backgroundImage ? `url(${activeProject.backgroundImage})` : 'none',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundColor: activeProject.backgroundImage ? 'transparent' : '#f8f9fa'
-                }}
-              >
-                {activeProject.elements.map(renderPreviewElement)}
-                
-                {/* Overlay para mostrar que es interactivo */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-5 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
-                  <div className="bg-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-                    Haz clic en los elementos para editarlos
+            {/* Vista Previa */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Vista Previa - {activeProject.name}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">
+                      {activeProject.elements.length} elementos
+                    </Badge>
+                    <Button variant="outline" size="sm" onClick={() => window.open(activeProject.url, '_blank')}>
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                
-                {/* Grilla de ayuda */}
-                <div className="absolute inset-0 pointer-events-none opacity-10">
-                  <div className="w-full h-full" style={{
-                    backgroundImage: 'linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)',
-                    backgroundSize: '20px 20px'
-                  }}></div>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="relative border-2 border-dashed border-gray-300 aspect-[16/9] w-full overflow-hidden bg-white"
+                  style={{
+                    backgroundImage: activeProject.backgroundImage ? `url(${activeProject.backgroundImage})` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }}
+                >
+                  {/* Grid de ayuda */}
+                  <div className="absolute inset-0 opacity-20 pointer-events-none">
+                    <div className="w-full h-full" style={{
+                      backgroundImage: `
+                        linear-gradient(to right, #ccc 1px, transparent 1px),
+                        linear-gradient(to bottom, #ccc 1px, transparent 1px)
+                      `,
+                      backgroundSize: '20px 20px'
+                    }} />
+                  </div>
+                  
+                  {/* Elementos renderizados */}
+                  {activeProject.elements.map(element => renderPreviewElement(element))}
+                  
+                  {/* Indicador de área vacía */}
+                  {activeProject.elements.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                      <div className="text-center">
+                        <Globe className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>Agrega elementos para comenzar a editar</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                
+                <div className="mt-4 text-xs text-muted-foreground text-center">
+                  Click en cualquier elemento para editarlo • Usa las herramientas de la izquierda para agregar contenido
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        {/* Dialog para editar elementos */}
-        <Dialog open={isEditingElement && selectedElement !== null} onOpenChange={setIsEditingElement}>
-          <DialogContent className="sm:max-w-[500px]">
+        {/* Dialog para cargar proyecto */}
+        <Dialog open={showAddProject} onOpenChange={setShowAddProject}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Editar {selectedElement?.type === 'text' ? 'Texto' : 'Elemento'}</DialogTitle>
+              <DialogTitle>Cargar Nuevo Proyecto</DialogTitle>
+              <DialogDescription>
+                Ingresa la URL del proyecto web que quieres editar
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="projectName">Nombre del proyecto</Label>
+                <Input
+                  id="projectName"
+                  placeholder="Mi proyecto web"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="projectUrl">URL del proyecto</Label>
+                <Input
+                  id="projectUrl"
+                  placeholder="https://example.com"
+                  value={newProjectUrl}
+                  onChange={(e) => setNewProjectUrl(e.target.value)}
+                  ref={urlInputRef}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddProject(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleLoadProject} disabled={isLoadingProject}>
+                {isLoadingProject ? "Cargando..." : "Cargar Proyecto"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog para editar elemento */}
+        <Dialog open={isEditingElement} onOpenChange={setIsEditingElement}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Editar Elemento</DialogTitle>
               <DialogDescription>
                 Modifica las propiedades del elemento seleccionado
               </DialogDescription>
             </DialogHeader>
-            
             {selectedElement && (
-              <div className="grid gap-4 py-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Tipo de elemento</Label>
+                  <Badge variant="outline">{selectedElement.type}</Badge>
+                </div>
+                
+                {selectedElement.type === 'text' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="content">Texto</Label>
+                    <Textarea
+                      id="content"
+                      value={selectedElement.content}
+                      onChange={(e) => setSelectedElement({
+                        ...selectedElement,
+                        content: e.target.value
+                      })}
+                    />
+                  </div>
+                )}
+                
                 {selectedElement.type === 'text' && (
                   <>
-                    <div className="grid gap-2">
-                      <Label>Contenido</Label>
-                      <Textarea
-                        value={selectedElement.content}
-                        onChange={(e) => setSelectedElement({
-                          ...selectedElement,
-                          content: e.target.value
-                        })}
-                        placeholder="Ingresa el texto aquí..."
-                      />
-                    </div>
-                    
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label>Tamaño de Fuente</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="fontSize">Tamaño de fuente</Label>
                         <Input
+                          id="fontSize"
                           value={selectedElement.styles.fontSize || '1rem'}
                           onChange={(e) => setSelectedElement({
                             ...selectedElement,
                             styles: { ...selectedElement.styles, fontSize: e.target.value }
                           })}
-                          placeholder="1rem"
                         />
                       </div>
-                      <div className="grid gap-2">
-                        <Label>Color</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="color">Color</Label>
                         <Input
+                          id="color"
                           type="color"
                           value={selectedElement.styles.color || '#000000'}
                           onChange={(e) => setSelectedElement({
@@ -549,95 +650,90 @@ const NativeApps = () => {
                   </>
                 )}
                 
+                {(selectedElement.type === 'image' || selectedElement.type === 'logo') && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Imagen actual</Label>
+                      <img src={selectedElement.content} alt="Current" className="max-w-full h-32 object-contain border rounded" />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleImageUpload('element')}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Cambiar imagen
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="width">Ancho</Label>
+                        <Input
+                          id="width"
+                          value={selectedElement.styles.width || 'auto'}
+                          onChange={(e) => setSelectedElement({
+                            ...selectedElement,
+                            styles: { ...selectedElement.styles, width: e.target.value }
+                          })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="height">Alto</Label>
+                        <Input
+                          id="height"
+                          value={selectedElement.styles.height || 'auto'}
+                          onChange={(e) => setSelectedElement({
+                            ...selectedElement,
+                            styles: { ...selectedElement.styles, height: e.target.value }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>Posición X (%)</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="posX">Posición X (%)</Label>
                     <Input
+                      id="posX"
                       type="number"
+                      min="0"
+                      max="100"
                       value={selectedElement.position.x}
                       onChange={(e) => setSelectedElement({
                         ...selectedElement,
                         position: { ...selectedElement.position, x: Number(e.target.value) }
                       })}
-                      min="0"
-                      max="100"
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Posición Y (%)</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="posY">Posición Y (%)</Label>
                     <Input
+                      id="posY"
                       type="number"
+                      min="0"
+                      max="100"
                       value={selectedElement.position.y}
                       onChange={(e) => setSelectedElement({
                         ...selectedElement,
                         position: { ...selectedElement.position, y: Number(e.target.value) }
                       })}
-                      min="0"
-                      max="100"
                     />
                   </div>
                 </div>
-                
-                {(selectedElement.type === 'image' || selectedElement.type === 'logo') && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label>Ancho</Label>
-                        <Input
-                          value={selectedElement.styles.width || '100px'}
-                          onChange={(e) => setSelectedElement({
-                            ...selectedElement,
-                            styles: { ...selectedElement.styles, width: e.target.value }
-                          })}
-                          placeholder="100px"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>Alto</Label>
-                        <Input
-                          value={selectedElement.styles.height || '100px'}
-                          onChange={(e) => setSelectedElement({
-                            ...selectedElement,
-                            styles: { ...selectedElement.styles, height: e.target.value }
-                          })}
-                          placeholder="100px"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label>Cambiar Imagen</Label>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setUploadType('element');
-                          fileInputRef.current?.click();
-                        }}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Subir Nueva Imagen
-                      </Button>
-                    </div>
-                  </>
-                )}
               </div>
             )}
-            
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setIsEditingElement(false);
-                setSelectedElement(null);
-              }}>
+              <Button variant="outline" onClick={() => setIsEditingElement(false)}>
                 Cancelar
               </Button>
               <Button onClick={() => {
                 if (selectedElement) {
                   handleUpdateElement(selectedElement);
                   setIsEditingElement(false);
-                  setSelectedElement(null);
                 }
               }}>
-                Guardar Cambios
+                Guardar cambios
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -645,11 +741,11 @@ const NativeApps = () => {
 
         {/* Input oculto para subir archivos */}
         <input
-          ref={fileInputRef}
           type="file"
-          accept="image/*"
+          ref={fileInputRef}
           onChange={handleFileChange}
-          className="hidden"
+          accept="image/*"
+          style={{ display: 'none' }}
         />
       </div>
     </DashboardLayout>

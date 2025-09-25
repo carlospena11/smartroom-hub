@@ -94,7 +94,7 @@ const navItems: NavItem[] = [
     href: "/settings",
   },
   {
-    title: "Apps Nativas",
+    title: "Proyectos",
     icon: Smartphone,
     href: "/native-apps",
   },
