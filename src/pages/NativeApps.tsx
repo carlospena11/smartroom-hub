@@ -407,7 +407,7 @@ const NativeApps = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-2">
-                <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 rounded-lg overflow-hidden relative" style={{ height: '600px' }}>
+                <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 rounded-lg overflow-hidden relative" style={{ height: '700px' }}>
                   {/* Android TV Status Bar */}
                   <div className="absolute top-0 left-0 right-0 h-8 bg-black/30 flex items-center justify-between px-4 text-white text-xs z-20">
                     <div className="flex items-center gap-2">
@@ -433,33 +433,125 @@ const NativeApps = () => {
                   </div>
 
                   {/* Web Content Area */}
-                  <div className="pt-18 h-full relative">
+                  <div className="absolute top-18 left-2 right-2 bottom-2">
                     {currentProject ? (
-                      <div className="h-full w-full bg-white rounded-lg overflow-hidden relative" style={{ marginTop: '72px', height: 'calc(100% - 72px)' }}>
+                      <div className="h-full w-full bg-white rounded-lg overflow-hidden relative shadow-2xl">
                         <iframe
                           srcDoc={currentProject.htmlContent}
                           className="w-full h-full border-0"
                           style={{ 
-                            transform: 'scale(1)',
-                            transformOrigin: 'top left',
                             width: '100%',
-                            height: '100%'
+                            height: '100%',
+                            minHeight: '600px'
                           }}
-                          sandbox="allow-scripts allow-same-origin"
+                          sandbox="allow-scripts allow-same-origin allow-forms"
                           title="Vista previa del proyecto web"
+                          onLoad={(e) => {
+                            const iframe = e.target as HTMLIFrameElement;
+                            try {
+                              const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                              if (doc) {
+                                // Ajustar el viewport del contenido
+                                const viewport = doc.querySelector('meta[name="viewport"]');
+                                if (!viewport) {
+                                  const meta = doc.createElement('meta');
+                                  meta.name = 'viewport';
+                                  meta.content = 'width=device-width, initial-scale=1.0';
+                                  doc.head.appendChild(meta);
+                                }
+                                
+                                // Aplicar estilos responsivos
+                                const style = doc.createElement('style');
+                                style.textContent = `
+                                  body { 
+                                    margin: 0 !important; 
+                                    padding: 20px !important;
+                                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                                    line-height: 1.6 !important;
+                                    overflow-x: hidden !important;
+                                  }
+                                  * { 
+                                    max-width: 100% !important; 
+                                    box-sizing: border-box !important;
+                                  }
+                                  img { 
+                                    height: auto !important; 
+                                    object-fit: contain !important;
+                                  }
+                                  .container, .wrapper { 
+                                    max-width: 100% !important; 
+                                    margin: 0 auto !important;
+                                  }
+                                `;
+                                doc.head.appendChild(style);
+                              }
+                            } catch (error) {
+                              console.log('No se pudo acceder al contenido del iframe');
+                            }
+                          }}
                         />
                         
                         {/* Element Selection Overlay */}
                         <div className="absolute inset-0 pointer-events-none">
                           {selectedElement && (
-                            <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-lg text-sm z-10">
+                            <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-lg text-sm z-10 shadow-lg">
                               ✏️ {selectedElement.type === 'image' ? 'Imagen' : 'Texto'} seleccionado
+                              <div className="text-xs mt-1 opacity-80">
+                                {selectedElement.type === 'image' 
+                                  ? selectedElement.content.split('/').pop()?.slice(0, 20) + '...'
+                                  : selectedElement.content.slice(0, 30) + '...'
+                                }
+                              </div>
                             </div>
                           )}
                         </div>
+
+                        {/* Zoom Controls */}
+                        <div className="absolute top-4 right-4 flex gap-2 z-10">
+                          <button 
+                            className="bg-black/50 text-white p-2 rounded-lg text-xs hover:bg-black/70 transition-colors"
+                            onClick={() => {
+                              const iframe = document.querySelector('iframe');
+                              if (iframe) {
+                                const currentScale = parseFloat(iframe.style.transform.replace(/[^0-9.]/g, '') || '1');
+                                const newScale = Math.min(currentScale + 0.1, 2);
+                                iframe.style.transform = `scale(${newScale})`;
+                                iframe.style.transformOrigin = 'top left';
+                              }
+                            }}
+                          >
+                            🔍+
+                          </button>
+                          <button 
+                            className="bg-black/50 text-white p-2 rounded-lg text-xs hover:bg-black/70 transition-colors"
+                            onClick={() => {
+                              const iframe = document.querySelector('iframe');
+                              if (iframe) {
+                                const currentScale = parseFloat(iframe.style.transform.replace(/[^0-9.]/g, '') || '1');
+                                const newScale = Math.max(currentScale - 0.1, 0.5);
+                                iframe.style.transform = `scale(${newScale})`;
+                                iframe.style.transformOrigin = 'top left';
+                              }
+                            }}
+                          >
+                            🔍-
+                          </button>
+                          <button 
+                            className="bg-black/50 text-white p-2 rounded-lg text-xs hover:bg-black/70 transition-colors"
+                            onClick={() => {
+                              const iframe = document.querySelector('iframe');
+                              if (iframe) {
+                                iframe.style.transform = 'scale(1)';
+                                iframe.style.transformOrigin = 'top left';
+                              }
+                            }}
+                          >
+                            🎯
+                          </button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center h-full pt-18">
+                      <div className="flex items-center justify-center h-full">
                         <div className="text-center text-white">
                           <FileCode className="h-20 w-20 text-white/30 mx-auto mb-6" />
                           <h3 className="text-2xl font-medium text-white/80 mb-3">
@@ -468,10 +560,11 @@ const NativeApps = () => {
                           <p className="text-white/60 text-lg">
                             Carga tu proyecto web para ver la vista previa completa
                           </p>
-                          <div className="mt-6 text-white/50 text-sm">
+                          <div className="mt-6 text-white/50 text-sm space-y-1">
                             <p>✓ Carga HTML, CSS, JS e imágenes</p>
                             <p>✓ Vista previa en tiempo real</p>
                             <p>✓ Edición de elementos visuales</p>
+                            <p>✓ Zoom y navegación completa</p>
                           </div>
                         </div>
                       </div>
