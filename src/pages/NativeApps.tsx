@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Globe, Upload, Download, Eye, Palette, Image as ImageIcon, Type, ExternalLink, Plus, Edit3, Trash2, Save, BookOpen, Users, Star } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Globe, Upload, Download, Eye, Palette, Image as ImageIcon, Type, ExternalLink, Plus, Edit3, Trash2, Save, BookOpen, Users, Star, Smartphone, Monitor, FolderOpen, Tv } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,11 +29,14 @@ interface ProjectElement {
   };
 }
 
+type ProjectType = 'web' | 'android';
+
 interface WebProject {
   id: string;
   name: string;
   url: string;
   description: string;
+  type: ProjectType;
   elements: ProjectElement[];
   backgroundImage?: string;
   isLoaded: boolean;
@@ -54,50 +58,89 @@ interface ProjectTemplate {
   thumbnail_url?: string | null;
 }
 
-// Proyecto demo inicial
-const demoProject: WebProject = {
-  id: "demo-1",
-  name: "Proyecto Demo",
-  url: "https://lovable.dev/projects/f9c6dd0a-7e63-49b9-b0dc-cda403509b86",
-  description: "Proyecto base para demostración - Haz click para seleccionar",
-  isLoaded: true,
-  isSaved: false,
-  elements: [
-    {
-      id: "demo-text-1",
-      type: "text",
-      content: "Bienvenido a SmartRoom",
-      originalContent: "Bienvenido a SmartRoom",
-      position: { x: 50, y: 20 },
-      styles: { fontSize: "2rem", color: "#1e40af", fontWeight: "bold" }
-    },
-    {
-      id: "demo-text-2", 
-      type: "text",
-      content: "Gestión inteligente para hoteles",
-      originalContent: "Gestión inteligente para hoteles",
-      position: { x: 50, y: 35 },
-      styles: { fontSize: "1.2rem", color: "#666" }
-    },
-    {
-      id: "demo-logo-1",
-      type: "logo",
-      content: "/placeholder.svg",
-      originalContent: "/placeholder.svg",
-      position: { x: 15, y: 15 },
-      styles: { width: "120px", height: "60px" }
-    }
-  ]
-};
+// Proyectos demo iniciales
+const demoProjects: WebProject[] = [
+  {
+    id: "demo-web-1",
+    name: "Hotel Web App",
+    url: "https://lovable.dev/projects/web-demo",
+    description: "Aplicación web para hotel - Vista responsive",
+    type: "web",
+    isLoaded: true,
+    isSaved: false,
+    elements: [
+      {
+        id: "demo-text-1",
+        type: "text",
+        content: "Bienvenido a SmartRoom",
+        originalContent: "Bienvenido a SmartRoom",
+        position: { x: 50, y: 20 },
+        styles: { fontSize: "2rem", color: "#1e40af", fontWeight: "bold" }
+      },
+      {
+        id: "demo-text-2", 
+        type: "text",
+        content: "Gestión inteligente para hoteles",
+        originalContent: "Gestión inteligente para hoteles",
+        position: { x: 50, y: 35 },
+        styles: { fontSize: "1.2rem", color: "#666" }
+      },
+      {
+        id: "demo-logo-1",
+        type: "logo",
+        content: "/placeholder.svg",
+        originalContent: "/placeholder.svg",
+        position: { x: 15, y: 15 },
+        styles: { width: "120px", height: "60px" }
+      }
+    ]
+  },
+  {
+    id: "demo-android-1", 
+    name: "Android TV App",
+    url: "https://lovable.dev/projects/android-demo",
+    description: "App nativa para Android TV - Vista horizontal",
+    type: "android",
+    isLoaded: true,
+    isSaved: false,
+    elements: [
+      {
+        id: "demo-android-text-1",
+        type: "text",
+        content: "SmartRoom TV",
+        originalContent: "SmartRoom TV",
+        position: { x: 50, y: 25 },
+        styles: { fontSize: "3rem", color: "#ffffff", fontWeight: "bold" }
+      },
+      {
+        id: "demo-android-text-2",
+        type: "text", 
+        content: "Experiencia Android TV",
+        originalContent: "Experiencia Android TV",
+        position: { x: 50, y: 45 },
+        styles: { fontSize: "1.5rem", color: "#cccccc" }
+      },
+      {
+        id: "demo-android-logo-1",
+        type: "logo",
+        content: "/placeholder.svg",
+        originalContent: "/placeholder.svg", 
+        position: { x: 10, y: 10 },
+        styles: { width: "100px", height: "50px" }
+      }
+    ]
+  }
+];
 
 const NativeApps = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const projectFileInputRef = useRef<HTMLInputElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
   
-  const [projects, setProjects] = useState<WebProject[]>([demoProject]);
+  const [projects, setProjects] = useState<WebProject[]>(demoProjects);
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
-  const [activeProject, setActiveProject] = useState<WebProject | null>(demoProject);
+  const [activeProject, setActiveProject] = useState<WebProject | null>(demoProjects[0]);
   const [selectedElement, setSelectedElement] = useState<ProjectElement | null>(null);
   const [isEditingElement, setIsEditingElement] = useState(false);
   const [uploadType, setUploadType] = useState<'background' | 'logo' | 'element'>('element');
@@ -107,6 +150,7 @@ const NativeApps = () => {
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [newProjectUrl, setNewProjectUrl] = useState("");
   const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectType, setNewProjectType] = useState<ProjectType>("web");
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templateTags, setTemplateTags] = useState("");
@@ -224,6 +268,7 @@ const NativeApps = () => {
       id: Date.now().toString(),
       name: `${template.name} - Copia`,
       url: template.url || "",
+      type: "web", // Por defecto web, se puede mejorar guardando el tipo en la plantilla
       description: template.description || "Proyecto cargado desde plantilla",
       isLoaded: true,
       isSaved: false,
@@ -286,25 +331,33 @@ const NativeApps = () => {
         id: Date.now().toString(),
         name: newProjectName,
         url: newProjectUrl,
-        description: "Proyecto cargado desde URL",
+        type: newProjectType,
+        description: `Proyecto ${newProjectType === 'web' ? 'web' : 'Android TV'} cargado desde URL`,
         isLoaded: true,
         isSaved: false,
         elements: [
           {
             id: Date.now().toString(),
             type: "text",
-            content: "Título principal",
-            originalContent: "Título principal",
+            content: newProjectType === 'web' ? "Título principal" : "App Android TV",
+            originalContent: newProjectType === 'web' ? "Título principal" : "App Android TV",
             position: { x: 50, y: 25 },
-            styles: { fontSize: "2rem", color: "#333", fontWeight: "bold" }
+            styles: { 
+              fontSize: newProjectType === 'web' ? "2rem" : "3rem", 
+              color: newProjectType === 'web' ? "#333" : "#ffffff", 
+              fontWeight: "bold" 
+            }
           },
           {
             id: (Date.now() + 1).toString(),
             type: "text",
-            content: "Subtítulo",
-            originalContent: "Subtítulo",
+            content: newProjectType === 'web' ? "Subtítulo" : "Experiencia de usuario mejorada",
+            originalContent: newProjectType === 'web' ? "Subtítulo" : "Experiencia de usuario mejorada",
             position: { x: 50, y: 40 },
-            styles: { fontSize: "1.2rem", color: "#666" }
+            styles: { 
+              fontSize: newProjectType === 'web' ? "1.2rem" : "1.5rem", 
+              color: newProjectType === 'web' ? "#666" : "#cccccc" 
+            }
           }
         ]
       };
@@ -315,6 +368,7 @@ const NativeApps = () => {
       setShowAddProject(false);
       setNewProjectUrl("");
       setNewProjectName("");
+      setNewProjectType("web");
       setIsLoadingProject(false);
       
       toast({
@@ -322,6 +376,61 @@ const NativeApps = () => {
         description: `${newProjectName} se ha cargado exitosamente.`
       });
     }, 2000);
+  };
+
+  const handleLoadProjectFromFile = () => {
+    projectFileInputRef.current?.click();
+  };
+
+  const handleProjectFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          let projectData;
+          
+          if (file.type === 'application/json' || file.name.endsWith('.json')) {
+            projectData = JSON.parse(content);
+          } else {
+            // Simular extracción de otros formatos
+            projectData = {
+              name: file.name.replace(/\.[^/.]+$/, ""),
+              type: "web",
+              description: "Proyecto cargado desde archivo local",
+              elements: []
+            };
+          }
+          
+          const newProject: WebProject = {
+            id: Date.now().toString(),
+            name: projectData.name || `Proyecto ${file.name}`,
+            url: projectData.url || "",
+            type: projectData.type || "web",
+            description: projectData.description || "Proyecto cargado desde archivo local",
+            isLoaded: true,
+            isSaved: false,
+            elements: projectData.elements || []
+          };
+          
+          setProjects(prev => [...prev, newProject]);
+          setActiveProject(newProject);
+          
+          toast({
+            title: "Proyecto cargado",
+            description: `${newProject.name} se ha cargado desde el archivo.`
+          });
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "No se pudo cargar el archivo. Verifica el formato.",
+            variant: "destructive"
+          });
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   const deleteProject = (projectId: string) => {
@@ -543,7 +652,11 @@ const NativeApps = () => {
             </Button>
             <Button variant="outline" onClick={() => setShowAddProject(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Cargar Proyecto
+              Cargar desde URL
+            </Button>
+            <Button variant="outline" onClick={handleLoadProjectFromFile}>
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Cargar Archivo
             </Button>
             {activeProject && (
               <>
@@ -558,6 +671,15 @@ const NativeApps = () => {
               </>
             )}
           </div>
+          
+          {/* Input oculto para cargar archivos */}
+          <input
+            ref={projectFileInputRef}
+            type="file"
+            accept=".json,.zip,.rar,.tar"
+            onChange={handleProjectFileChange}
+            className="hidden"
+          />
         </div>
 
         {/* Lista de Proyectos */}
@@ -609,13 +731,17 @@ const NativeApps = () => {
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
-                  <div className="flex items-center gap-2 mb-2">
-                    <ExternalLink className="h-3 w-3" />
-                    <span className="text-xs text-muted-foreground truncate">{project.url}</span>
+                    <div className="flex items-center gap-2 mb-2">
+                    {project.type === 'web' ? (
+                      <Globe className="h-3 w-3" />
+                    ) : (
+                      <Smartphone className="h-3 w-3" />
+                    )}
+                    <span className="text-xs text-muted-foreground truncate">{project.url || 'Proyecto local'}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                      {project.elements.length} elementos
+                      {project.elements.length} elementos • {project.type === 'web' ? 'Web' : 'Android TV'}
                     </span>
                     {project.templateId && (
                       <Badge variant="secondary" className="text-xs">
@@ -751,15 +877,22 @@ const NativeApps = () => {
               </CardContent>
             </Card>
 
-            {/* Vista Previa */}
+            {/* Simulador Web/Android TV */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    <Eye className="h-5 w-5" />
-                    Vista Previa - {activeProject.name}
+                    {activeProject.type === 'web' ? (
+                      <Globe className="h-5 w-5" />
+                    ) : (
+                      <Tv className="h-5 w-5" />
+                    )}
+                    Simulador {activeProject.type === 'web' ? 'Web' : 'Android TV'} - {activeProject.name}
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    <Badge variant={activeProject.type === 'web' ? 'default' : 'secondary'}>
+                      {activeProject.type === 'web' ? 'Web App' : 'Android TV'}
+                    </Badge>
                     <Badge variant="outline">
                       {activeProject.elements.length} elementos
                     </Badge>
@@ -777,40 +910,99 @@ const NativeApps = () => {
               </CardHeader>
               <CardContent>
                 <div 
-                  className="relative border-2 border-dashed border-gray-300 aspect-[16/9] w-full overflow-hidden bg-white"
+                  className={`relative border-2 border-dashed border-gray-300 w-full overflow-hidden transition-all ${
+                    activeProject.type === 'web' 
+                      ? 'aspect-[4/3] bg-white' 
+                      : 'aspect-[16/9] bg-gradient-to-r from-gray-900 to-gray-700'
+                  }`}
                   style={{
                     backgroundImage: activeProject.backgroundImage ? `url(${activeProject.backgroundImage})` : 'none',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                   }}
                 >
+                  {/* Simulador específico por tipo */}
+                  {activeProject.type === 'android' && (
+                    <>
+                      {/* Barra de estado Android TV */}
+                      <div className="absolute top-0 left-0 right-0 h-6 bg-black/20 backdrop-blur-sm border-b border-white/10">
+                        <div className="flex items-center justify-between px-4 h-full text-white/70 text-xs">
+                          <span>Android TV</span>
+                          <span>12:30 PM</span>
+                        </div>
+                      </div>
+                      
+                      {/* Indicadores de navegación Android TV */}
+                      <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                        <div className="w-6 h-6 rounded bg-white/20 flex items-center justify-center">
+                          <div className="w-3 h-3 rounded bg-white/50" />
+                        </div>
+                        <div className="text-white/50 text-xs">Control remoto</div>
+                      </div>
+                    </>
+                  )}
+                  
+                  {activeProject.type === 'web' && (
+                    <>
+                      {/* Barra de navegador web */}
+                      <div className="absolute top-0 left-0 right-0 h-8 bg-gray-100 border-b flex items-center px-4 gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-3 h-3 rounded-full bg-red-500" />
+                          <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                        </div>
+                        <div className="flex-1 bg-white rounded px-2 py-1 text-xs text-gray-600">
+                          {activeProject.url || 'localhost:3000'}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
                   {/* Grid de ayuda */}
-                  <div className="absolute inset-0 opacity-20 pointer-events-none">
+                  <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ 
+                    top: activeProject.type === 'web' ? '32px' : '24px' 
+                  }}>
                     <div className="w-full h-full" style={{
                       backgroundImage: `
-                        linear-gradient(to right, #ccc 1px, transparent 1px),
-                        linear-gradient(to bottom, #ccc 1px, transparent 1px)
+                        linear-gradient(to right, ${activeProject.type === 'web' ? '#ccc' : '#fff'} 1px, transparent 1px),
+                        linear-gradient(to bottom, ${activeProject.type === 'web' ? '#ccc' : '#fff'} 1px, transparent 1px)
                       `,
                       backgroundSize: '20px 20px'
                     }} />
                   </div>
                   
                   {/* Elementos renderizados */}
-                  {activeProject.elements.map(element => renderPreviewElement(element))}
+                  <div className="absolute inset-0" style={{ 
+                    top: activeProject.type === 'web' ? '32px' : '24px',
+                    bottom: activeProject.type === 'android' ? '40px' : '0'
+                  }}>
+                    {activeProject.elements.map(element => renderPreviewElement(element))}
+                  </div>
                   
                   {/* Indicador de área vacía */}
                   {activeProject.elements.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground" style={{
+                      top: activeProject.type === 'web' ? '32px' : '24px',
+                      bottom: activeProject.type === 'android' ? '40px' : '0'
+                    }}>
                       <div className="text-center">
-                        <Globe className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p>Agrega elementos para comenzar a editar</p>
+                        {activeProject.type === 'web' ? (
+                          <Globe className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        ) : (
+                          <Tv className="h-12 w-12 mx-auto mb-2 opacity-50 text-white/50" />
+                        )}
+                        <p className={activeProject.type === 'web' ? 'text-gray-500' : 'text-white/50'}>
+                          Agrega elementos para comenzar a editar
+                        </p>
                       </div>
                     </div>
                   )}
                 </div>
                 
                 <div className="mt-4 text-xs text-muted-foreground text-center">
-                  Click en cualquier elemento para editarlo • Usa las herramientas de la izquierda para agregar contenido
+                  Simulador {activeProject.type === 'web' ? 'Web Responsivo' : 'Android TV'} • 
+                  Click en elementos para editarlos • 
+                  Usa las herramientas de la izquierda
                 </div>
               </CardContent>
             </Card>
