@@ -54,14 +54,50 @@ interface ProjectTemplate {
   thumbnail_url?: string | null;
 }
 
+// Proyecto demo inicial
+const demoProject: WebProject = {
+  id: "demo-1",
+  name: "Proyecto Demo",
+  url: "https://lovable.dev/projects/f9c6dd0a-7e63-49b9-b0dc-cda403509b86",
+  description: "Proyecto base para demostración - Haz click para seleccionar",
+  isLoaded: true,
+  isSaved: false,
+  elements: [
+    {
+      id: "demo-text-1",
+      type: "text",
+      content: "Bienvenido a SmartRoom",
+      originalContent: "Bienvenido a SmartRoom",
+      position: { x: 50, y: 20 },
+      styles: { fontSize: "2rem", color: "#1e40af", fontWeight: "bold" }
+    },
+    {
+      id: "demo-text-2", 
+      type: "text",
+      content: "Gestión inteligente para hoteles",
+      originalContent: "Gestión inteligente para hoteles",
+      position: { x: 50, y: 35 },
+      styles: { fontSize: "1.2rem", color: "#666" }
+    },
+    {
+      id: "demo-logo-1",
+      type: "logo",
+      content: "/placeholder.svg",
+      originalContent: "/placeholder.svg",
+      position: { x: 15, y: 15 },
+      styles: { width: "120px", height: "60px" }
+    }
+  ]
+};
+
 const NativeApps = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
   
-  const [projects, setProjects] = useState<WebProject[]>([]);
+  const [projects, setProjects] = useState<WebProject[]>([demoProject]);
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
-  const [activeProject, setActiveProject] = useState<WebProject | null>(null);
+  const [activeProject, setActiveProject] = useState<WebProject | null>(demoProject);
   const [selectedElement, setSelectedElement] = useState<ProjectElement | null>(null);
   const [isEditingElement, setIsEditingElement] = useState(false);
   const [uploadType, setUploadType] = useState<'background' | 'logo' | 'element'>('element');
@@ -100,11 +136,7 @@ const NativeApps = () => {
       setTemplates(formattedTemplates);
     } catch (error) {
       console.error('Error loading templates:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las plantillas.",
-        variant: "destructive"
-      });
+      // No mostrar error si no hay plantillas, es normal al inicio
     }
   };
 
@@ -121,15 +153,32 @@ const NativeApps = () => {
     try {
       const tagsArray = templateTags.split(',').map(tag => tag.trim()).filter(tag => tag);
       
+      // Obtener el usuario actual
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        toast({
+          title: "Error de autenticación",
+          description: "Debes estar autenticado para guardar plantillas.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Obtener el tenant_id del usuario actual
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('tenant_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', userData.user.id)
         .single();
 
       if (profileError || !profile?.tenant_id) {
-        throw new Error('No se pudo obtener información del tenant');
+        toast({
+          title: "Error",
+          description: "No se pudo obtener información del tenant. Intenta más tarde.",
+          variant: "destructive"
+        });
+        return;
       }
       
       const { data, error } = await supabase
@@ -164,7 +213,7 @@ const NativeApps = () => {
       console.error('Error saving template:', error);
       toast({
         title: "Error",
-        description: "No se pudo guardar la plantilla.",
+        description: "No se pudo guardar la plantilla. Verifica tu conexión.",
         variant: "destructive"
       });
     }
@@ -276,10 +325,13 @@ const NativeApps = () => {
   };
 
   const deleteProject = (projectId: string) => {
+    console.log('Deleting project:', projectId);
+    
     setProjects(prev => prev.filter(p => p.id !== projectId));
     
     if (activeProject?.id === projectId) {
-      setActiveProject(null);
+      const remainingProjects = projects.filter(p => p.id !== projectId);
+      setActiveProject(remainingProjects.length > 0 ? remainingProjects[0] : null);
     }
     
     toast({
@@ -432,8 +484,6 @@ const NativeApps = () => {
   };
 
   const renderPreviewElement = (element: ProjectElement) => {
-    console.log('Rendering element:', element.id, element.type, element.content, element.position);
-    
     const style = {
       position: 'absolute' as const,
       left: `${element.position.x}%`,
@@ -441,10 +491,11 @@ const NativeApps = () => {
       transform: 'translate(-50%, -50%)',
       ...element.styles,
       cursor: 'pointer',
-      border: selectedElement?.id === element.id ? '2px dashed #3b82f6' : '1px solid rgba(255,0,0,0.3)',
+      border: selectedElement?.id === element.id ? '2px dashed #3b82f6' : '1px solid rgba(0,123,255,0.3)',
       padding: selectedElement?.id === element.id ? '4px' : '2px',
       backgroundColor: 'rgba(255,255,255,0.9)',
-      zIndex: 10
+      zIndex: 10,
+      borderRadius: '4px'
     };
 
     switch (element.type) {
@@ -488,7 +539,7 @@ const NativeApps = () => {
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowTemplates(true)}>
               <BookOpen className="h-4 w-4 mr-2" />
-              Repositorio
+              Repositorio ({templates.length})
             </Button>
             <Button variant="outline" onClick={() => setShowAddProject(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -516,66 +567,75 @@ const NativeApps = () => {
               <Globe className="h-5 w-5" />
               Proyectos Activos ({projects.length})
             </CardTitle>
+            <CardDescription>
+              Haz click en un proyecto para seleccionarlo y editarlo
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {projects.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No hay proyectos cargados</p>
-                <p className="text-sm">Carga un proyecto desde URL o usa una plantilla del repositorio</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects.map((project) => (
-                  <div
-                    key={project.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
-                      activeProject?.id === project.id ? 'border-primary bg-primary/5' : ''
-                    }`}
-                    onClick={() => setActiveProject(project)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium">{project.name}</h3>
-                      <div className="flex items-center gap-1">
-                        <Badge variant={project.isLoaded ? "default" : "secondary"}>
-                          {project.isLoaded ? "Cargado" : "Pendiente"}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects.map((project) => (
+                <div
+                  key={project.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                    activeProject?.id === project.id ? 'border-primary bg-primary/5 shadow-md' : 'hover:border-primary/50'
+                  }`}
+                  onClick={() => setActiveProject(project)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">{project.name}</h3>
+                    <div className="flex items-center gap-1">
+                      <Badge variant={project.isLoaded ? "default" : "secondary"}>
+                        {project.isLoaded ? "Cargado" : "Pendiente"}
+                      </Badge>
+                      {!project.isSaved && project.isLoaded && (
+                        <Badge variant="outline" className="text-xs">
+                          Modificado
                         </Badge>
-                        {!project.isSaved && project.isLoaded && (
-                          <Badge variant="outline" className="text-xs">
-                            Sin guardar
-                          </Badge>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
                             deleteProject(project.id);
-                          }}
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
+                          }
+                        }}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive ml-1"
+                        title="Eliminar proyecto"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
-                    <div className="flex items-center gap-2 mb-2">
-                      <ExternalLink className="h-3 w-3" />
-                      <span className="text-xs text-muted-foreground truncate">{project.url}</span>
-                    </div>
-                    {project.tags && project.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {project.tags.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <ExternalLink className="h-3 w-3" />
+                    <span className="text-xs text-muted-foreground truncate">{project.url}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {project.elements.length} elementos
+                    </span>
+                    {project.templateId && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Star className="h-2 w-2 mr-1" />
+                        Plantilla
+                      </Badge>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
+                  {project.tags && project.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {project.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
@@ -736,10 +796,7 @@ const NativeApps = () => {
                   </div>
                   
                   {/* Elementos renderizados */}
-                  {(() => {
-                    console.log('Active project elements:', activeProject.elements.length, activeProject.elements);
-                    return activeProject.elements.map(element => renderPreviewElement(element));
-                  })()}
+                  {activeProject.elements.map(element => renderPreviewElement(element))}
                   
                   {/* Indicador de área vacía */}
                   {activeProject.elements.length === 0 && (
@@ -766,7 +823,7 @@ const NativeApps = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                Repositorio de Plantillas
+                Repositorio de Plantillas ({templates.length})
               </DialogTitle>
               <DialogDescription>
                 Selecciona una plantilla para aplicar a un cliente
@@ -793,7 +850,9 @@ const NativeApps = () => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteTemplate(template.id);
+                          if (window.confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) {
+                            deleteTemplate(template.id);
+                          }
                         }}
                         className="h-6 w-6 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive"
                       >
