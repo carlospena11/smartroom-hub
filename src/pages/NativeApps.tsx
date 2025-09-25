@@ -22,6 +22,8 @@ interface WebProject {
   files: FileList;
   elements: EditableElement[];
   htmlContent: string;
+  projectFiles: { [filename: string]: File };
+  imageUrls: { [filename: string]: string };
 }
 
 const NativeApps = () => {
@@ -96,43 +98,79 @@ const NativeApps = () => {
     setIsLoading(true);
     
     try {
-      // Leer el archivo HTML principal
+      // Organizar archivos por tipo
+      const projectFiles: { [filename: string]: File } = {};
+      const imageUrls: { [filename: string]: string } = {};
       let htmlFile: File | null = null;
       let htmlContent = '';
       
+      // Procesar todos los archivos
       for (let i = 0; i < files.length; i++) {
-        if (files[i].name.endsWith('.html') || files[i].name.endsWith('.htm')) {
-          htmlFile = files[i];
-          htmlContent = await readFileAsText(htmlFile);
-          break;
+        const file = files[i];
+        projectFiles[file.name] = file;
+        
+        // Identificar archivo HTML principal (index.html o el primero encontrado)
+        if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+          if (file.name.toLowerCase().includes('index') || !htmlFile) {
+            htmlFile = file;
+            htmlContent = await readFileAsText(file);
+          }
+        }
+        
+        // Crear URLs locales para imágenes
+        if (file.type.startsWith('image/') || /\.(png|jpe?g|gif|svg|webp)$/i.test(file.name)) {
+          imageUrls[file.name] = URL.createObjectURL(file);
         }
       }
       
       if (!htmlFile) {
         toast({
           title: "Error",
-          description: "Debes incluir al menos un archivo HTML",
+          description: "Debes incluir al menos un archivo HTML (preferiblemente index.html)",
           variant: "destructive"
         });
         setIsLoading(false);
         return;
       }
       
+      // Procesar HTML y reemplazar rutas de imágenes con URLs locales
+      let processedHTML = htmlContent;
+      Object.keys(imageUrls).forEach(imageName => {
+        const regex = new RegExp(`(src=["']?)([^"']*${imageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        processedHTML = processedHTML.replace(regex, `$1${imageUrls[imageName]}`);
+      });
+      
       const elements = await parseProjectFiles(files);
+      
+      // Actualizar elementos con URLs locales
+      const updatedElements = elements.map(element => {
+        if (element.type === 'image') {
+          const imageName = element.content.split('/').pop();
+          if (imageName && imageUrls[imageName]) {
+            return {
+              ...element,
+              content: imageUrls[imageName]
+            };
+          }
+        }
+        return element;
+      });
       
       const project: WebProject = {
         id: Date.now().toString(),
         name: htmlFile.name.replace(/\.(html|htm)$/, ''),
         files,
-        elements,
-        htmlContent
+        elements: updatedElements,
+        htmlContent: processedHTML,
+        projectFiles,
+        imageUrls
       };
       
       setCurrentProject(project);
       
       toast({
-        title: "Proyecto cargado",
-        description: `${elements.length} elementos editables encontrados`
+        title: "Proyecto cargado exitosamente",
+        description: `${Object.keys(projectFiles).length} archivos cargados, ${updatedElements.length} elementos editables`
       });
       
     } catch (error) {
@@ -167,8 +205,8 @@ const NativeApps = () => {
     });
   };
 
-  // Descargar proyecto modificado
-  const downloadProject = () => {
+  // Descargar proyecto modificado como ZIP
+  const downloadProject = async () => {
     if (!currentProject) return;
     
     try {
@@ -178,9 +216,12 @@ const NativeApps = () => {
       currentProject.elements.forEach(element => {
         if (element.content !== element.originalContent) {
           if (element.type === 'image') {
-            // Reemplazar src de imágenes
-            const imgRegex = new RegExp(`(<img[^>]*src=["'])[^"']*([^"']*${element.originalContent.split('/').pop()?.split('.')[0]}[^"']*["'][^>]*>)`, 'gi');
-            modifiedHTML = modifiedHTML.replace(imgRegex, `$1${element.content}$2`);
+            // Para imágenes, restaurar la ruta original
+            const originalImageName = element.originalContent.split('/').pop();
+            if (originalImageName) {
+              const regex = new RegExp(`src=["']${element.content}["']`, 'g');
+              modifiedHTML = modifiedHTML.replace(regex, `src="${originalImageName}"`);
+            }
           } else {
             // Reemplazar contenido de texto
             modifiedHTML = modifiedHTML.replace(
@@ -191,7 +232,51 @@ const NativeApps = () => {
         }
       });
       
-      // Crear y descargar archivo
+      // Crear y descargar proyecto completo
+      const zip = new (window as any).JSZip();
+      
+      // Agregar HTML modificado
+      const htmlFileName = Object.keys(currentProject.projectFiles).find(name => 
+        name.endsWith('.html') || name.endsWith('.htm')
+      ) || 'index.html';
+      zip.file(htmlFileName, modifiedHTML);
+      
+      // Agregar todos los demás archivos
+      for (const [filename, file] of Object.entries(currentProject.projectFiles)) {
+        if (!filename.endsWith('.html') && !filename.endsWith('.htm')) {
+          const content = await file.arrayBuffer();
+          zip.file(filename, content);
+        }
+      }
+      
+      // Generar y descargar ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentProject.name}-android-tv.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Proyecto descargado",
+        description: "El proyecto completo se ha descargado como ZIP"
+      });
+    } catch (error) {
+      // Fallback: descargar solo HTML
+      let modifiedHTML = currentProject.htmlContent;
+      
+      currentProject.elements.forEach(element => {
+        if (element.content !== element.originalContent && element.type === 'text') {
+          modifiedHTML = modifiedHTML.replace(
+            new RegExp(`>${element.originalContent}<`, 'g'),
+            `>${element.content}<`
+          );
+        }
+      });
+      
       const blob = new Blob([modifiedHTML], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -203,14 +288,8 @@ const NativeApps = () => {
       URL.revokeObjectURL(url);
       
       toast({
-        title: "Proyecto descargado",
-        description: "El archivo HTML modificado se ha descargado"
-      });
-    } catch (error) {
-      toast({
-        title: "Error al descargar",
-        description: "No se pudo generar el archivo",
-        variant: "destructive"
+        title: "HTML descargado",
+        description: "El archivo HTML modificado se ha descargado (ZIP no disponible)"
       });
     }
   };
@@ -243,7 +322,7 @@ const NativeApps = () => {
                   Cargar Proyecto
                 </CardTitle>
                 <CardDescription>
-                  Sube archivos HTML, CSS, JS e imágenes de tu proyecto web
+                  Selecciona todos los archivos de tu proyecto web (HTML, CSS, JS, imágenes)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -260,7 +339,7 @@ const NativeApps = () => {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".html,.htm,.css,.js,.png,.jpg,.jpeg,.gif,.svg"
+                    accept=".html,.htm,.css,.js,.png,.jpg,.jpeg,.gif,.svg,.webp,.ico,.woff,.woff2,.ttf"
                     multiple
                     onChange={handleFileUpload}
                     className="hidden"
