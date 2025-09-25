@@ -391,28 +391,28 @@ const NativeApps = () => {
             )}
           </div>
 
-          {/* Preview Android TV */}
+          {/* Preview Navegador Web - Android TV */}
           <div className="lg:col-span-2">
             <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Monitor className="h-5 w-5" />
-                  Vista Previa Android TV
+                  Navegador Web - Android TV
                 </CardTitle>
                 <CardDescription>
                   {currentProject 
-                    ? `${currentProject.name} - Haz clic en elementos para editarlos`
-                    : "Sube un proyecto para ver la vista previa"
+                    ? `${currentProject.name} - Vista completa del proyecto web`
+                    : "Sube un proyecto para ver la vista previa del navegador"
                   }
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
-                <div className="aspect-video bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 rounded-lg overflow-hidden relative">
+              <CardContent className="p-2">
+                <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 rounded-lg overflow-hidden relative" style={{ height: '600px' }}>
                   {/* Android TV Status Bar */}
-                  <div className="absolute top-0 left-0 right-0 h-8 bg-black/30 flex items-center justify-between px-4 text-white text-xs">
+                  <div className="absolute top-0 left-0 right-0 h-8 bg-black/30 flex items-center justify-between px-4 text-white text-xs z-20">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <span>Android TV</span>
+                      <span>Android TV Browser</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span>WiFi</span>
@@ -420,62 +420,71 @@ const NativeApps = () => {
                     </div>
                   </div>
 
-                  {/* Contenido */}
-                  <div className="p-8 pt-12 h-full text-white">
+                  {/* Browser Navigation Bar */}
+                  <div className="absolute top-8 left-0 right-0 h-10 bg-white/10 backdrop-blur-sm flex items-center px-4 z-20">
+                    <div className="flex items-center gap-2 text-white/80 text-sm">
+                      <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                      <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                      <div className="ml-4 bg-white/20 px-3 py-1 rounded-full text-xs flex-1 max-w-md">
+                        🌐 {currentProject?.name || 'proyecto'}.html
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Web Content Area */}
+                  <div className="pt-18 h-full relative">
                     {currentProject ? (
-                      <div className="grid grid-cols-2 gap-6 h-full">
-                        {currentProject.elements.map((element) => (
-                          <div
-                            key={element.id}
-                            className={`p-4 rounded-lg cursor-pointer transition-all ${
-                              selectedElement?.id === element.id
-                                ? 'ring-2 ring-yellow-400 bg-white/10'
-                                : 'hover:bg-white/5'
-                            }`}
-                            onClick={() => setSelectedElement(element)}
-                          >
-                            {element.type === 'image' ? (
-                              <div className="space-y-2">
-                                <div className="w-full h-32 bg-white/10 rounded flex items-center justify-center">
-                                  {element.content ? (
-                                    <img 
-                                      src={element.content} 
-                                      alt="Imagen" 
-                                      className="max-w-full max-h-full object-contain rounded"
-                                    />
-                                  ) : (
-                                    <Image className="h-8 w-8 text-white/50" />
-                                  )}
-                                </div>
-                                <p className="text-xs text-white/70 text-center">
-                                  {element.content.split('/').pop() || 'imagen'}
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="bg-white/10 p-4 rounded">
-                                <p className="text-lg">{element.content}</p>
-                                <p className="text-xs text-white/70 mt-2">
-                                  {element.tagName}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                      <div className="h-full w-full bg-white rounded-lg overflow-hidden relative" style={{ marginTop: '72px', height: 'calc(100% - 72px)' }}>
+                        <iframe
+                          srcDoc={currentProject.htmlContent}
+                          className="w-full h-full border-0"
+                          style={{ 
+                            transform: 'scale(1)',
+                            transformOrigin: 'top left',
+                            width: '100%',
+                            height: '100%'
+                          }}
+                          sandbox="allow-scripts allow-same-origin"
+                          title="Vista previa del proyecto web"
+                        />
+                        
+                        {/* Element Selection Overlay */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          {selectedElement && (
+                            <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-lg text-sm z-10">
+                              ✏️ {selectedElement.type === 'image' ? 'Imagen' : 'Texto'} seleccionado
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                          <FileCode className="h-16 w-16 text-white/30 mx-auto mb-4" />
-                          <h3 className="text-xl font-medium text-white/70 mb-2">
+                      <div className="flex items-center justify-center h-full pt-18">
+                        <div className="text-center text-white">
+                          <FileCode className="h-20 w-20 text-white/30 mx-auto mb-6" />
+                          <h3 className="text-2xl font-medium text-white/80 mb-3">
                             Sin proyecto cargado
                           </h3>
-                          <p className="text-white/50">
-                            Carga archivos HTML para comenzar a editar
+                          <p className="text-white/60 text-lg">
+                            Carga tu proyecto web para ver la vista previa completa
                           </p>
+                          <div className="mt-6 text-white/50 text-sm">
+                            <p>✓ Carga HTML, CSS, JS e imágenes</p>
+                            <p>✓ Vista previa en tiempo real</p>
+                            <p>✓ Edición de elementos visuales</p>
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
+
+                  {/* Project Info */}
+                  {currentProject && (
+                    <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-2 rounded-lg text-sm backdrop-blur-sm">
+                      📁 {Object.keys(currentProject.projectFiles).length} archivos • 
+                      ✏️ {currentProject.elements.length} elementos editables
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
