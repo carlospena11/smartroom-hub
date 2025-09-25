@@ -127,6 +127,7 @@ const NativeApps = () => {
         ]
       };
       
+      console.log('New project created:', newProject);
       setProjects(prev => [...prev, newProject]);
       setActiveProject(newProject);
       setShowAddProject(false);
@@ -279,6 +280,8 @@ const NativeApps = () => {
   };
 
   const renderPreviewElement = (element: ProjectElement) => {
+    console.log('Rendering element:', element.id, element.type, element.content, element.position);
+    
     const style = {
       position: 'absolute' as const,
       left: `${element.position.x}%`,
@@ -286,8 +289,10 @@ const NativeApps = () => {
       transform: 'translate(-50%, -50%)',
       ...element.styles,
       cursor: 'pointer',
-      border: selectedElement?.id === element.id ? '2px dashed #3b82f6' : 'none',
-      padding: selectedElement?.id === element.id ? '4px' : '0'
+      border: selectedElement?.id === element.id ? '2px dashed #3b82f6' : '1px solid rgba(255,0,0,0.3)',
+      padding: selectedElement?.id === element.id ? '4px' : '2px',
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      zIndex: 10
     };
 
     switch (element.type) {
@@ -528,7 +533,10 @@ const NativeApps = () => {
                   </div>
                   
                   {/* Elementos renderizados */}
-                  {activeProject.elements.map(element => renderPreviewElement(element))}
+                  {(() => {
+                    console.log('Active project elements:', activeProject.elements.length, activeProject.elements);
+                    return activeProject.elements.map(element => renderPreviewElement(element));
+                  })()}
                   
                   {/* Indicador de área vacía */}
                   {activeProject.elements.length === 0 && (
