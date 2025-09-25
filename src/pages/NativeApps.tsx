@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Globe, Upload, Download, Eye, Palette, Image as ImageIcon, Type, ExternalLink, Plus, Edit3, Trash2 } from "lucide-react";
+import { Globe, Upload, Download, Eye, Palette, Image as ImageIcon, Type, ExternalLink, Plus, Edit3, Trash2, Save, BookOpen, Users, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProjectElement {
   id: string;
@@ -35,6 +36,22 @@ interface WebProject {
   elements: ProjectElement[];
   backgroundImage?: string;
   isLoaded: boolean;
+  isSaved?: boolean;
+  templateId?: string;
+  tags?: string[];
+}
+
+interface ProjectTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  url: string | null;
+  elements: ProjectElement[];
+  background_image?: string | null;
+  tags: string[];
+  is_public: boolean;
+  created_at: string;
+  thumbnail_url?: string | null;
 }
 
 const NativeApps = () => {
@@ -42,50 +59,165 @@ const NativeApps = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
   
-  const [projects, setProjects] = useState<WebProject[]>([
-    {
-      id: "1",
-      name: "Proyecto Demo",
-      url: "https://lovable.dev/projects/f9c6dd0a-7e63-49b9-b0dc-cda403509b86",
-      description: "Proyecto base para edición",
-      isLoaded: true,
-      elements: [
-        {
-          id: "1",
-          type: "text",
-          content: "Bienvenido a SmartRoom",
-          originalContent: "Bienvenido a SmartRoom",
-          position: { x: 50, y: 20 },
-          styles: { fontSize: "2rem", color: "#1e40af", fontWeight: "bold" }
-        },
-        {
-          id: "2", 
-          type: "text",
-          content: "Gestión inteligente para hoteles",
-          originalContent: "Gestión inteligente para hoteles",
-          position: { x: 50, y: 35 },
-          styles: { fontSize: "1.2rem", color: "#666" }
-        },
-        {
-          id: "3",
-          type: "logo",
-          content: "/placeholder.svg",
-          originalContent: "/placeholder.svg",
-          position: { x: 10, y: 10 },
-          styles: { width: "120px", height: "60px" }
-        }
-      ]
-    }
-  ]);
-  
-  const [activeProject, setActiveProject] = useState<WebProject | null>(projects[0]);
+  const [projects, setProjects] = useState<WebProject[]>([]);
+  const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
+  const [activeProject, setActiveProject] = useState<WebProject | null>(null);
   const [selectedElement, setSelectedElement] = useState<ProjectElement | null>(null);
   const [isEditingElement, setIsEditingElement] = useState(false);
   const [uploadType, setUploadType] = useState<'background' | 'logo' | 'element'>('element');
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const [showAddProject, setShowAddProject] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [newProjectUrl, setNewProjectUrl] = useState("");
   const [newProjectName, setNewProjectName] = useState("");
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [templateTags, setTemplateTags] = useState("");
+  const [isPublicTemplate, setIsPublicTemplate] = useState(false);
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  const loadTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('project_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Convertir los datos de Supabase al formato esperado
+      const formattedTemplates: ProjectTemplate[] = (data || []).map(template => ({
+        ...template,
+        elements: Array.isArray(template.elements) ? template.elements as unknown as ProjectElement[] : [],
+        description: template.description || "",
+        url: template.url || ""
+      }));
+      
+      setTemplates(formattedTemplates);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las plantillas.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveAsTemplate = async () => {
+    if (!activeProject || !templateName) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const tagsArray = templateTags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      
+      // Obtener el tenant_id del usuario actual
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profileError || !profile?.tenant_id) {
+        throw new Error('No se pudo obtener información del tenant');
+      }
+      
+      const { data, error } = await supabase
+        .from('project_templates')
+        .insert({
+          name: templateName,
+          description: templateDescription,
+          url: activeProject.url,
+          elements: activeProject.elements as any, // Cast para Json type
+          background_image: activeProject.backgroundImage,
+          tags: tagsArray,
+          is_public: isPublicTemplate,
+          tenant_id: profile.tenant_id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Plantilla guardada",
+        description: `${templateName} se ha guardado en el repositorio.`
+      });
+
+      setShowSaveTemplate(false);
+      setTemplateName("");
+      setTemplateDescription("");
+      setTemplateTags("");
+      setIsPublicTemplate(false);
+      loadTemplates();
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la plantilla.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadFromTemplate = (template: ProjectTemplate) => {
+    const newProject: WebProject = {
+      id: Date.now().toString(),
+      name: `${template.name} - Copia`,
+      url: template.url || "",
+      description: template.description || "Proyecto cargado desde plantilla",
+      isLoaded: true,
+      isSaved: false,
+      templateId: template.id,
+      tags: template.tags,
+      elements: template.elements,
+      backgroundImage: template.background_image || undefined
+    };
+    
+    setProjects(prev => [...prev, newProject]);
+    setActiveProject(newProject);
+    setShowTemplates(false);
+    
+    toast({
+      title: "Plantilla cargada",
+      description: `${template.name} se ha cargado exitosamente.`
+    });
+  };
+
+  const deleteTemplate = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('project_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Plantilla eliminada",
+        description: "La plantilla se ha eliminado del repositorio."
+      });
+
+      loadTemplates();
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la plantilla.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleLoadProject = async () => {
     if (!newProjectUrl || !newProjectName) {
@@ -107,6 +239,7 @@ const NativeApps = () => {
         url: newProjectUrl,
         description: "Proyecto cargado desde URL",
         isLoaded: true,
+        isSaved: false,
         elements: [
           {
             id: Date.now().toString(),
@@ -142,6 +275,19 @@ const NativeApps = () => {
     }, 2000);
   };
 
+  const deleteProject = (projectId: string) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    
+    if (activeProject?.id === projectId) {
+      setActiveProject(null);
+    }
+    
+    toast({
+      title: "Proyecto eliminado",
+      description: "El proyecto se ha eliminado de la lista."
+    });
+  };
+
   const handleElementClick = (element: ProjectElement) => {
     setSelectedElement(element);
     setIsEditingElement(true);
@@ -154,7 +300,8 @@ const NativeApps = () => {
       ...activeProject,
       elements: activeProject.elements.map(el => 
         el.id === updatedElement.id ? updatedElement : el
-      )
+      ),
+      isSaved: false
     };
     
     setActiveProject(updatedProject);
@@ -181,7 +328,8 @@ const NativeApps = () => {
         if (uploadType === 'background') {
           const updatedProject = {
             ...activeProject,
-            backgroundImage: imageUrl
+            backgroundImage: imageUrl,
+            isSaved: false
           };
           setActiveProject(updatedProject);
           setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
@@ -202,7 +350,8 @@ const NativeApps = () => {
             };
             const updatedProject = {
               ...activeProject,
-              elements: [...activeProject.elements, newLogoElement]
+              elements: [...activeProject.elements, newLogoElement],
+              isSaved: false
             };
             setActiveProject(updatedProject);
             setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
@@ -223,7 +372,8 @@ const NativeApps = () => {
           
           const updatedProject = {
             ...activeProject,
-            elements: [...activeProject.elements, newElement]
+            elements: [...activeProject.elements, newElement],
+            isSaved: false
           };
           setActiveProject(updatedProject);
           setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
@@ -243,7 +393,8 @@ const NativeApps = () => {
     
     const updatedProject = {
       ...activeProject,
-      elements: activeProject.elements.filter(el => el.id !== elementId)
+      elements: activeProject.elements.filter(el => el.id !== elementId),
+      isSaved: false
     };
     
     setActiveProject(updatedProject);
@@ -272,7 +423,8 @@ const NativeApps = () => {
     
     const updatedProject = {
       ...activeProject,
-      elements: [...activeProject.elements, newElement]
+      elements: [...activeProject.elements, newElement],
+      isSaved: false
     };
     
     setActiveProject(updatedProject);
@@ -330,19 +482,29 @@ const NativeApps = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Proyectos</h1>
-            <p className="text-muted-foreground">Editor visual para páginas web - Solo imágenes y textos</p>
+            <p className="text-muted-foreground">Editor visual y repositorio de plantillas para clientes</p>
           </div>
           
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowTemplates(true)}>
+              <BookOpen className="h-4 w-4 mr-2" />
+              Repositorio
+            </Button>
             <Button variant="outline" onClick={() => setShowAddProject(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Cargar Proyecto
             </Button>
             {activeProject && (
-              <Button className="bg-gradient-primary">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar Cambios
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => setShowSaveTemplate(true)}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar Plantilla
+                </Button>
+                <Button className="bg-gradient-primary">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -352,33 +514,68 @@ const NativeApps = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5" />
-              Proyectos Cargados
+              Proyectos Activos ({projects.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map((project) => (
-                <div
-                  key={project.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
-                    activeProject?.id === project.id ? 'border-primary bg-primary/5' : ''
-                  }`}
-                  onClick={() => setActiveProject(project)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">{project.name}</h3>
-                    <Badge variant={project.isLoaded ? "default" : "secondary"}>
-                      {project.isLoaded ? "Cargado" : "Pendiente"}
-                    </Badge>
+            {projects.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay proyectos cargados</p>
+                <p className="text-sm">Carga un proyecto desde URL o usa una plantilla del repositorio</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.map((project) => (
+                  <div
+                    key={project.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                      activeProject?.id === project.id ? 'border-primary bg-primary/5' : ''
+                    }`}
+                    onClick={() => setActiveProject(project)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">{project.name}</h3>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={project.isLoaded ? "default" : "secondary"}>
+                          {project.isLoaded ? "Cargado" : "Pendiente"}
+                        </Badge>
+                        {!project.isSaved && project.isLoaded && (
+                          <Badge variant="outline" className="text-xs">
+                            Sin guardar
+                          </Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteProject(project.id);
+                          }}
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <ExternalLink className="h-3 w-3" />
+                      <span className="text-xs text-muted-foreground truncate">{project.url}</span>
+                    </div>
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {project.tags.map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="h-3 w-3" />
-                    <span className="text-xs text-muted-foreground truncate">{project.url}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -506,6 +703,12 @@ const NativeApps = () => {
                     <Badge variant="outline">
                       {activeProject.elements.length} elementos
                     </Badge>
+                    {activeProject.templateId && (
+                      <Badge variant="secondary">
+                        <Star className="h-3 w-3 mr-1" />
+                        Plantilla
+                      </Badge>
+                    )}
                     <Button variant="outline" size="sm" onClick={() => window.open(activeProject.url, '_blank')}>
                       <ExternalLink className="h-4 w-4" />
                     </Button>
@@ -556,6 +759,130 @@ const NativeApps = () => {
             </Card>
           </div>
         )}
+
+        {/* Dialog para repositorio de plantillas */}
+        <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Repositorio de Plantillas
+              </DialogTitle>
+              <DialogDescription>
+                Selecciona una plantilla para aplicar a un cliente
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {templates.map((template) => (
+                <div
+                  key={template.id}
+                  className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => loadFromTemplate(template)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-medium">{template.name}</h3>
+                    <div className="flex items-center gap-1">
+                      {template.is_public && (
+                        <Badge variant="outline" className="text-xs">
+                          <Users className="h-3 w-3 mr-1" />
+                          Público
+                        </Badge>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTemplate(template.id);
+                        }}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {template.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {template.elements.length} elementos • {new Date(template.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {templates.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay plantillas guardadas</p>
+                <p className="text-sm">Crea un proyecto y guárdalo como plantilla</p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog para guardar plantilla */}
+        <Dialog open={showSaveTemplate} onOpenChange={setShowSaveTemplate}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Guardar como Plantilla</DialogTitle>
+              <DialogDescription>
+                Guarda este proyecto en el repositorio para aplicarlo a otros clientes
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="templateName">Nombre de la plantilla *</Label>
+                <Input
+                  id="templateName"
+                  placeholder="Plantilla Hotel Luxury"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="templateDescription">Descripción</Label>
+                <Textarea
+                  id="templateDescription"
+                  placeholder="Plantilla moderna para hoteles de lujo..."
+                  value={templateDescription}
+                  onChange={(e) => setTemplateDescription(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="templateTags">Tags (separados por comas)</Label>
+                <Input
+                  id="templateTags"
+                  placeholder="hotel, lujo, moderno"
+                  value={templateTags}
+                  onChange={(e) => setTemplateTags(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isPublic"
+                  checked={isPublicTemplate}
+                  onChange={(e) => setIsPublicTemplate(e.target.checked)}
+                />
+                <Label htmlFor="isPublic">Hacer público (otros tenants pueden usarlo)</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowSaveTemplate(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={saveAsTemplate}>
+                <Save className="h-4 w-4 mr-2" />
+                Guardar Plantilla
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Dialog para cargar proyecto */}
         <Dialog open={showAddProject} onOpenChange={setShowAddProject}>
