@@ -1285,6 +1285,54 @@ export type Database = {
           },
         ]
       }
+      project_templates: {
+        Row: {
+          background_image: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          elements: Json
+          id: string
+          is_public: boolean | null
+          name: string
+          tags: string[] | null
+          tenant_id: string
+          thumbnail_url: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          background_image?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          elements?: Json
+          id?: string
+          is_public?: boolean | null
+          name: string
+          tags?: string[] | null
+          tenant_id: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          background_image?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          elements?: Json
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          tags?: string[] | null
+          tenant_id?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       rooms: {
         Row: {
           codigo_habitacion: string
