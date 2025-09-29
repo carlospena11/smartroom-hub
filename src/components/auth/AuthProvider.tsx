@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+
+// Interfaz simplificada para usuario
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
+  session: { user: User } | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: any }>;
@@ -27,53 +32,76 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<{ user: User } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    // Cargar usuario desde localStorage
+    const storedUser = localStorage.getItem('auth_user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setSession({ user: userData });
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        localStorage.removeItem('auth_user');
       }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    // Simulación de autenticación - REEMPLAZAR CON TU BASE DE DATOS
+    try {
+      // Credenciales de demo
+      if (email === "admin@smartroom.com" && password === "admin123") {
+        const userData: User = {
+          id: "demo-user-id",
+          email: email,
+          name: "Usuario Demo"
+        };
+        
+        setUser(userData);
+        setSession({ user: userData });
+        localStorage.setItem('auth_user', JSON.stringify(userData));
+        
+        return { error: null };
+      }
+      
+      // Aquí debes agregar la lógica para conectar con tu base de datos
+      return { 
+        error: { message: "Credenciales inválidas. Usa las credenciales de demo o conecta tu base de datos." }
+      };
+    } catch (error: any) {
+      return { error: { message: error.message || "Error de autenticación" } };
+    }
   };
 
   const signUp = async (email: string, password: string, name?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: name ? { name } : undefined,
-      },
-    });
-    return { error };
+    // Simulación de registro - REEMPLAZAR CON TU BASE DE DATOS
+    try {
+      const userData: User = {
+        id: `user-${Date.now()}`,
+        email: email,
+        name: name || email
+      };
+      
+      setUser(userData);
+      setSession({ user: userData });
+      localStorage.setItem('auth_user', JSON.stringify(userData));
+      
+      // Aquí debes agregar la lógica para guardar en tu base de datos
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || "Error en el registro" } };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    localStorage.removeItem('auth_user');
   };
 
   return (

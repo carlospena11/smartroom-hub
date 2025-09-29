@@ -29,8 +29,8 @@ export const Header = () => {
   };
 
   const getUserName = () => {
-    if (user?.user_metadata?.name) {
-      return user.user_metadata.name;
+    if (user?.name) {
+      return user.name;
     }
     return user?.email?.split('@')[0] || 'Usuario';
   };
